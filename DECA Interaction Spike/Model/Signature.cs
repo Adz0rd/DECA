@@ -24,7 +24,7 @@ namespace DECA_Interaction_Spike.Model
         {
             public UInt32 maxSignatureSize;
             public UInt32 numSigPairs;
-            [MarshalAs(UnmanagedType.Struct)]
+            [MarshalAs(UnmanagedType.ByValArray, ArraySubType = UnmanagedType.Struct)]
             public SignatureData[] sigArr;
         }
     }
