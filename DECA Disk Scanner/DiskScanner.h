@@ -22,33 +22,36 @@ TODO:
 
 #define DEBUG_MODE 1
 
-struct SIG_DATA
+extern "C"
 {
-	unsigned int sigID;
-	unsigned char *sigHeader;
-	unsigned char *sigFooter;
-};
+	struct SIG_DATA
+	{
+		unsigned int sigID;
+		unsigned char *sigHeader;
+		unsigned char *sigFooter;
+	};
 
-// Structure for storing signature information.
-struct SIG_ARR
-{
-	unsigned int maxSignatureSize;
-	unsigned int numSigPairs;
+	// Structure for storing signature information.
+	struct SIG_ARR
+	{
+		unsigned int maxSignatureSize;
+		unsigned int numSigPairs;
 
-	SIG_DATA *sigArray[1];
-};
+		SIG_DATA *sigArray[1];
+	};
 
-struct ScanResult
-{
-	unsigned int sigID;
-	unsigned int headerCount;
-	unsigned int footerCount;
-};
+	struct ScanResult
+	{
+		unsigned int sigID;
+		unsigned int headerCount;
+		unsigned int footerCount;
+	};
 
-struct Response
-{
-	ScanResult *scanResultsArr[1];
-};
+	struct Response
+	{
+		ScanResult *scanResultsArr[1];
+	};
+}
 
 // DiskScanner interface class.
 class IDiskScanner
