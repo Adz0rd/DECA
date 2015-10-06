@@ -392,7 +392,7 @@ void DiskScanner::readAttributes(SIG_ARR *sigArray)
 {
 	//printf("maxSignatureSize: %d\nnumSigPairs: %d\nsigID: %d\n", sigArray->maxSignatureSize, sigArray->numSigPairs, sigArray->sigArray[0]->sigHeader);
 
-	printf("Received string:%d%d%d%d%d%d\n", sigArray->sigArray[0]->sigHeader[0], 
+	printf("Received string:%c%c%c%c%c%c\n", sigArray->sigArray[0]->sigHeader[0], 
 		sigArray->sigArray[0]->sigHeader[1], 
 		sigArray->sigArray[0]->sigHeader[2], 
 		sigArray->sigArray[0]->sigHeader[3],
