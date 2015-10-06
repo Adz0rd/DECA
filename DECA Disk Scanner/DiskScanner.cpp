@@ -515,6 +515,9 @@ ScanResult *DiskScanner::scanChunkList(SIG_ARR *sigArray)
 
 		sigDataPtr = sigDataPtr->next;
 		scanResultPtr = scanResultPtr->next;
+		headerSetPtr = headerSet;
+		footerSetPtr = footerSet;
+
 	}
 
 	// Free memory and return results.
