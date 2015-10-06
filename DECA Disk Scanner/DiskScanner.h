@@ -23,7 +23,7 @@ TODO:
 #define DEBUG_MODE 1
 
 extern "C"
-{
+{/*
 	struct SIG_DATA
 	{
 		unsigned int sigID;
@@ -34,11 +34,30 @@ extern "C"
 	// Structure for storing signature information.
 	struct SIG_ARR
 	{
+	unsigned int maxSignatureSize;
+	unsigned int numSigPairs;
+
+	SIG_DATA *sigArray[1];
+	};
+	*/
+
+	struct SIG_DATA
+	{
+		unsigned int sigID;
+		unsigned char *sigHeader;
+		unsigned char *sigFooter;
+		SIG_DATA *next;
+	};
+
+	// Structure for storing signature information.
+	struct SIG_ARR
+	{
 		unsigned int maxSignatureSize;
 		unsigned int numSigPairs;
 
-		SIG_DATA *sigArray[1];
+		SIG_DATA *sigArray;
 	};
+
 
 	struct ScanResult
 	{
@@ -51,6 +70,25 @@ extern "C"
 	{
 		ScanResult *scanResultsArr[1];
 	};
+
+	/* LINKED LIST TESTING.
+	struct SIG_DATA_LIST
+	{
+		unsigned int sigID;
+		unsigned char *sigHeader;
+		unsigned char *sigFooter;
+		SIG_DATA_LIST *next;
+	};
+
+	// Structure for storing signature information.
+	struct SIG_ARR_LIST
+	{
+		unsigned int maxSignatureSize;
+		unsigned int numSigPairs;
+
+		SIG_DATA_LIST *sigArray;
+	};
+	*/
 }
 
 // DiskScanner interface class.
