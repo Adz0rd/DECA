@@ -21,7 +21,7 @@ namespace DECA_Interaction_Spike
         public static extern void disposeScanner(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int scanChunk(IntPtr driveScanner, Model.Signature.Library signatureLibrary, out Model.Scan.Response scanResponse);
+        public static extern int scanChunk(IntPtr driveScanner, Model.Signature.Library signatureLibrary, IntPtr scanResponse);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int mountVolume(IntPtr driveScanner);
@@ -63,14 +63,13 @@ namespace DECA_Interaction_Spike
                 }
             };
 
-            //Declare the result struct in memory
-            Model.Scan.Response ScanResponse = new Model.Scan.Response();
-
+            IntPtr ResponsePointer = Marshal.AllocHGlobal(Marshal.SizeOf(new Model.Scan.Response()));
+            
             //Mount volume
             if (mountVolume(DriveScanner) == 0)
             {
                 //Scan the device
-                int ScanResults = scanChunk(DriveScanner, SignatureLibrary, out ScanResponse);
+                ScanResult = scanChunk(DriveScanner, SignatureLibrary, ResponsePointer);
             }
 
             //readSigData(DriveScanner, SignatureLibrary);
