@@ -4,9 +4,9 @@ IDiskScanner::~IDiskScanner() {}
 
 DiskScanner::~DiskScanner()
 {
-#ifdef DEBUG_MODE
+	#ifdef DEBUG_MODE
 	printf(">> Destructing DiskScanner object\n");
-#endif
+	#endif
 
 	delete diskPath;
 }
@@ -114,18 +114,18 @@ void DiskScanner::buildScanner(unsigned int chunkSize, unsigned int sectorSize, 
 
 	this->diskHandle = INVALID_HANDLE_VALUE;
 
-#ifdef DEBUG_MODE
+	#ifdef DEBUG_MODE
 	printf(">> Building scanner with parameters...\n chunkSize: %u\nsectorSize: %u\nstartOffset: %u\ndiskPath: %s\n",
 		this->chunkSize, this->sectorSize, this->startOffset, this->diskPath);
-#endif
+	#endif
 }
 
 int DiskScanner::mountVolume()
 {
-#ifdef DEBUG_MODE
+	#ifdef DEBUG_MODE
 	printf(">> Mounting volume\n");
 	printf(">> Chunk size: %u\nSector Size: %u\nOffset: %u\nVolume Path: %s\n", this->chunkSize, this->sectorSize, this->startOffset, this->diskPath);
-#endif
+	#endif
 
 	// Create a handle to the hard disk.
 	this->diskHandle = CreateFile((LPCSTR)this->diskPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
@@ -134,7 +134,7 @@ int DiskScanner::mountVolume()
 	if (this->diskHandle == INVALID_HANDLE_VALUE)
 	{
 		// Get the last system error message and output it to the console.
-#ifdef DEBUG_MODE
+		#ifdef DEBUG_MODE
 		DWORD errorCode = GetLastError();
 		LPVOID errorBuffer;
 
@@ -144,30 +144,30 @@ int DiskScanner::mountVolume()
 			LANG_NEUTRAL, (LPTSTR)&errorBuffer, 0, NULL);
 
 		printf(">> Mount volume failed with message: [%u] %s\n", errorCode, errorBuffer);
-#endif
+		#endif
 
 		return -1;
 	}
 
-#ifdef DEBUG_MODE
+	#ifdef DEBUG_MODE
 	printf(">> Mount succeeded! Moving to start offset\n");
-#endif
+	#endif
 
 	// Skip to the disk offset.
 	SetFilePointer(this->diskHandle, this->startOffset, NULL, FILE_CURRENT);
 
-#ifdef DEBUG_MODE
+	#ifdef DEBUG_MODE
 	printf(">> Disk ready for scanning.\n");
-#endif
+	#endif
 
 	return 0;
 }
 
 int DiskScanner::unmountVolume()
 {
-#ifdef DEBUG_MODE
+	#ifdef DEBUG_MODE
 	printf(">> Preparing to unmount volume.\n");
-#endif
+	#endif
 
 	// Check to see if the handle is open, then close it.
 	if (this->diskHandle != INVALID_HANDLE_VALUE)
@@ -175,16 +175,16 @@ int DiskScanner::unmountVolume()
 		CloseHandle(this->diskHandle);
 		this->diskHandle = INVALID_HANDLE_VALUE;
 
-#ifdef DEBUG_MODE
+		#ifdef DEBUG_MODE
 		printf(">> Successfully unmounted volume. Handle to device has been invalidated.\n");
-#endif
+		#endif
 
 		return 0;
 	}
 
-#ifdef DEBUG_MODE
+	#ifdef DEBUG_MODE
 	printf(">> Unable to unmount volume.\n");
-#endif
+	#endif
 
 	return -1;
 }
@@ -206,7 +206,7 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 
 	unsigned char *headerSetPtr = headerSet;
 	unsigned char *footerSetPtr = footerSet;
-
+	
 	// Scan the chunks into memory; (i == sector number).
 	for (unsigned int i = 0; i < this->chunkSize; i++)
 	{
@@ -226,13 +226,13 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 		memcpy(footerSetPtr, chunkPtr, uCharSize*sigPtr->maxSignatureSize);
 		footerSetPtr += sigPtr->maxSignatureSize*uCharSize;
 	}
-
+	
 	// Reset the chunk pointer to the start of the data.
 	chunkPtr = chunkData;
 
 	// Create the response struct.
 	Response *responsePtr = new Response;
-
+	
 	// Initialise the struct with signature IDs.
 	for (unsigned int i = 0; i < sigPtr->numSigPairs; i++)
 	{
@@ -241,7 +241,7 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 		responsePtr->scanResultsArr[i]->footerCount = 0;
 		responsePtr->scanResultsArr[i]->headerCount = 0;
 	}
-
+	
 	// Reset the scanning pointers.
 	headerSetPtr = headerSet;
 	footerSetPtr = footerSet;
@@ -254,16 +254,16 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 			// Check to see if the header is valid and compare.
 			if (sigPtr->sigArray[i]->sigHeader != NULL)
 			{
-#ifdef DEBUG_MODE
+				#ifdef DEBUG_MODE
 				printCompareSig(headerSetPtr, sigPtr->sigArray[i]->sigHeader, sigPtr->maxSignatureSize*uCharSize);
-#endif
+				#endif
 
 				// Compare the current signature with the valid header.
 				if (compareSig(headerSetPtr, sigPtr->sigArray[i]->sigHeader, sigPtr->maxSignatureSize*uCharSize) == 0)
 				{
-#ifdef DEBUG_MODE
+					#ifdef DEBUG_MODE
 					printf("match\n");
-#endif
+					#endif
 
 					// The signatures are equal, get the ID and incrememt the resultSet.
 					unsigned int thisID = sigPtr->sigArray[i]->sigID;
@@ -271,17 +271,17 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 					// Increment the header result set.
 					responsePtr->scanResultsArr[i]->headerCount++;
 				}
-#ifdef DEBUG_MODE
+				#ifdef DEBUG_MODE
 				else
 					printf("no match\n");
-#endif
+				#endif
 			}
 
 			if (sigPtr->sigArray[i]->sigFooter != NULL)
 			{
-#ifdef DEBUG_MODE
+				#ifdef DEBUG_MODE
 				printCompareSig(footerSetPtr, sigPtr->sigArray[i]->sigFooter, sigPtr->maxSignatureSize*uCharSize);
-#endif
+				#endif
 
 				// Compare the current signature with the valid footer.
 				if (compareSig(footerSetPtr, sigPtr->sigArray[i]->sigFooter, sigArray->maxSignatureSize*uCharSize) == 0)
@@ -292,10 +292,10 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 					// Increment the footer result set.
 					responsePtr->scanResultsArr[i]->footerCount++;
 				}
-#ifdef DEBUG_MODE
+				#ifdef DEBUG_MODE
 				else
 					printf("no match\n");
-#endif
+				#endif
 			}
 
 			// Increment the header and footer scanning sets.
@@ -305,12 +305,12 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 	}
 
 	// Free memory and return results.
-	delete chunkData;
-	delete headerSet;
-	delete footerSet;
-
+	delete[] chunkData;
+	delete[] headerSet;
+	delete[] footerSet;
+	/*
 	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
-
+	*/
 	return 0;
 }
 
@@ -390,7 +390,7 @@ int DiskScanner::scanChunkBST(SIG_ARR *sigArray, Response *returnStruct)
 
 void DiskScanner::readAttributes(SIG_ARR *sigArray)
 {
-
+	printf("maxSignatureSize: %d\nnumSigPairs: %d\n", sigArray->maxSignatureSize, sigArray->numSigPairs);
 }
 
 int DiskScanner::scanChunkTest(SIG_ARR *sigArray)
@@ -423,9 +423,9 @@ int DiskScanner::scanChunkTest(SIG_ARR *sigArray)
 		currentSig[1] = chunkData[1];
 		currentSig[2] = chunkData[2];
 
-#ifdef DEBUG_MODE
+		#ifdef DEBUG_MODE
 		printf("[Sector %d] Signature: %X%X%X | Header: %X%X%X\n", sectorNum, testSignature[0], testSignature[1], testSignature[2], chunkData[0], chunkData[1], chunkData[2]);
-#endif
+		#endif
 
 		if (compareSig(currentSig, testSignature, signatureSize) == 0)
 		{
