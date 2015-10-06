@@ -190,7 +190,7 @@ int DiskScanner::unmountVolume()
 }
 
 int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
-{
+{/*
 	// Temporary pointer to the signature structure.
 	SIG_ARR *sigPtr = sigArray;
 	int uCharSize = sizeof(unsigned char);
@@ -310,12 +310,12 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 	delete[] footerSet;
 	
 	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
-	
+	*/
 	return 0;
 }
 
 int DiskScanner::scanChunkBST(SIG_ARR *sigArray, Response *returnStruct)
-{
+{/*
 	// Temporary pointer to the signature structure.
 	SIG_ARR *sigPtr = sigArray;
 	int uCharSize = sizeof(unsigned char);
@@ -384,7 +384,7 @@ int DiskScanner::scanChunkBST(SIG_ARR *sigArray, Response *returnStruct)
 	delete[] footerSet;
 
 	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
-
+	*/
 	return 0;
 }
 
@@ -392,12 +392,19 @@ void DiskScanner::readAttributes(SIG_ARR *sigArray)
 {
 	//printf("maxSignatureSize: %d\nnumSigPairs: %d\nsigID: %d\n", sigArray->maxSignatureSize, sigArray->numSigPairs, sigArray->sigArray[0]->sigHeader);
 
-	printf("Received string:%c%c%c%c%c%c\n", sigArray->sigArray[0]->sigHeader[0], 
-		sigArray->sigArray[0]->sigHeader[1], 
-		sigArray->sigArray[0]->sigHeader[2], 
-		sigArray->sigArray[0]->sigHeader[3],
-		sigArray->sigArray[0]->sigHeader[4],
-		sigArray->sigArray[0]->sigHeader[5]);
+	printf("Received string 1:%c%c%c%c%c%c\n", sigArray->sigArray->sigHeader[0], 
+		sigArray->sigArray->sigHeader[1], 
+		sigArray->sigArray->sigHeader[2], 
+		sigArray->sigArray->sigHeader[3],
+		sigArray->sigArray->sigHeader[4],
+		sigArray->sigArray->sigHeader[5]);
+
+	printf("Received string 2:%c%c%c%c%c%c\n", sigArray->sigArray->next->sigHeader[0],
+		sigArray->sigArray->next->sigHeader[1],
+		sigArray->sigArray->next->sigHeader[2],
+		sigArray->sigArray->next->sigHeader[3],
+		sigArray->sigArray->next->sigHeader[4],
+		sigArray->sigArray->next->sigHeader[5]);
 }
 
 int DiskScanner::scanChunkTest(SIG_ARR *sigArray)
