@@ -1,13 +1,6 @@
 /*
 DiskScanner.h
 Written by Taylor.
-
-TODO:
-- unsigned char instead of char?
-- validation and error testing.
-- each signature read in from disk is maxSignatureSize, this should be variable.
-- Refactor/optimise scanning function.
-- Read footer scanning.
 */
 
 #include <windows.h>
@@ -16,8 +9,6 @@ TODO:
 
 #ifdef DECADISKSCANNER_EXPORTS
 #define DISKSCANNER_API __declspec(dllexport)
-/* #else 
-#define DISKSCANNER_API __declspec(dllimport) */
 #endif
 
 #define DEBUG_MODE 1
@@ -64,11 +55,12 @@ extern "C"
 		unsigned int sigID;
 		unsigned int headerCount;
 		unsigned int footerCount;
+		ScanResult *next;
 	};
 
 	struct Response
 	{
-		ScanResult *scanResultsArr[1];
+		ScanResult *scanResults;
 	};
 
 	/* LINKED LIST TESTING.
@@ -95,12 +87,18 @@ extern "C"
 class IDiskScanner
 {
 public:
+	// Initialisation methods.
 	virtual ~IDiskScanner() = 0;
 	virtual void buildScanner(unsigned int, unsigned int, char *, unsigned int) = 0;
 	virtual int mountVolume() = 0;
 	virtual int unmountVolume() = 0;
+
+	// Scanning methods.
 	virtual int scanChunk(SIG_ARR*, Response*) = 0;
 	virtual int scanChunkBST(SIG_ARR*, Response*) = 0;
+	virtual ScanResult *scanChunkList(SIG_ARR*) = 0;
+
+	// Testing methods.
 	virtual void readAttributes(SIG_ARR*) = 0;
 	virtual int scanChunkTest(SIG_ARR*) = 0;
 };
@@ -120,6 +118,7 @@ public:
 	// Scan the first/next available chunk.
 	int scanChunk(SIG_ARR *sigArray, Response *returnStruct);
 	int scanChunkBST(SIG_ARR *sigArray, Response *returnStruct);
+	ScanResult *scanChunkList(SIG_ARR *sigArray);
 	int scanChunkTest(SIG_ARR *sigArray);
 
 	// Testing functions.
@@ -179,6 +178,11 @@ extern "C"
 	DISKSCANNER_API int scanChunkBST(IDiskScanner *diskScanner, SIG_ARR *sigArray, Response *returnStruct)
 	{
 		return diskScanner->scanChunk(sigArray, returnStruct);
+	}
+
+	DISKSCANNER_API ScanResult *scanChunkList(IDiskScanner *diskScanner, SIG_ARR *sigArray)
+	{
+		return diskScanner->scanChunkList(sigArray);
 	}
 
 	DISKSCANNER_API void readSigData(IDiskScanner *diskScanner, SIG_ARR *sigArray)
