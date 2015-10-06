@@ -59,6 +59,7 @@ public:
 	virtual int mountVolume() = 0;
 	virtual int unmountVolume() = 0;
 	virtual int scanChunk(SIG_ARR*, Response*) = 0;
+	virtual int scanChunkBST(SIG_ARR*, Response*) = 0;
 	virtual void readAttributes(SIG_ARR*) = 0;
 	virtual int scanChunkTest(SIG_ARR*) = 0;
 };
@@ -77,6 +78,7 @@ public:
 
 	// Scan the first/next available chunk.
 	int scanChunk(SIG_ARR *sigArray, Response *returnStruct);
+	int scanChunkBST(SIG_ARR *sigArray, Response *returnStruct);
 	int scanChunkTest(SIG_ARR *sigArray);
 
 	// Testing functions.
@@ -92,8 +94,9 @@ private:
 	// Methods for internal printing and comparison.
 	int compareSig(unsigned char *sig1, unsigned char *sig2, int size);
 	void printCompareSig(unsigned char *sig1, unsigned char *sig2, int size);
+	int binarySearch(unsigned char *arrayList, unsigned char *sig, int min, int max, int sigSize);
+	int hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize);
 };
-
 
 // Exported C functions for DLL communication from client.
 extern "C"
@@ -128,6 +131,11 @@ extern "C"
 
 	// Scan the first/next available chunk.
 	DISKSCANNER_API int scanChunk(IDiskScanner *diskScanner, SIG_ARR *sigArray, Response *returnStruct)
+	{
+		return diskScanner->scanChunk(sigArray, returnStruct);
+	}
+
+	DISKSCANNER_API int scanChunkBST(IDiskScanner *diskScanner, SIG_ARR *sigArray, Response *returnStruct)
 	{
 		return diskScanner->scanChunk(sigArray, returnStruct);
 	}
