@@ -63,7 +63,7 @@ int DiskScanner::mountVolume()
 #endif
 
 	// Create a handle to the hard disk.
-	this->diskHandle = CreateFile((LPCWSTR)this->diskPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+	this->diskHandle = CreateFile((LPCSTR)this->diskPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
 	// Check to see if the handle is valid.
 	if (this->diskHandle == INVALID_HANDLE_VALUE)

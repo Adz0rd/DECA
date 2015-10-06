@@ -45,41 +45,43 @@ namespace DECA_Interaction_Spike
             //buildScanner(DriveScanner, Convert.ToUInt32(args[0]), 1024, args[1], 0);
             buildScanner(DriveScanner, 10000, 1024, @"\\.\D:", 0);
             int ScanResult = -1;
+            
+
+            //Construct the signature library
+            Model.Signature.Library SignatureLibrary = new Model.Signature.Library()
+            {
+                numSigPairs = 1,
+                maxSignatureSize = 3,
+                sigArr = new Model.Signature.SignatureData[1]
+                {
+                    new Model.Signature.SignatureData()
+                    {
+                        sigId = 1,
+                        sigHeader = "FFD8FF",
+                        sigFooter = null
+                    }
+                }
+            };
+
+            //Declare the result struct in memory
+            Model.Scan.Response ScanResponse = new Model.Scan.Response();
+
+            
+
             //Mount volume
             if (mountVolume(DriveScanner) == 0)
             {
-                ScanResult = scanChunkTest(DriveScanner);
+                //Scan the device
+                int ScanResults = scanChunk(DriveScanner, SignatureLibrary, out ScanResponse);
             }
 
-            //Construct the signature library
-            //Model.Signature.Library SignatureLibrary = new Model.Signature.Library()
-            //{
-            //    numSigPairs = 1,
-            //    maxSignatureSize = 16,
-            //    sigArr = new Model.Signature.SignatureData[1] 
-            //    {
-            //        new Model.Signature.SignatureData()
-            //        {
-            //            sigId = 1,
-            //            sigHeader = "FFD8FF",
-            //            sigFooter = null
-            //        }
-            //    }
-            //};
-
-            //Declare the result struct in memory
-            //Model.Scan.Response ScanResponse = new Model.Scan.Response();
-
-            //Scan the device
-            //int ScanResults = scanChunk(DriveScanner, SignatureLibrary, out ScanResponse);
-            
             //readSigData(DriveScanner, SignatureLibrary);
 
             //Unmount the volume
             //unmountVolume();
 
             //Dispose of the scanner
-            disposeScanner(DriveScanner);
+            //disposeScanner(DriveScanner);
 
             //Print results
             Console.WriteLine("Scan result: " + ScanResult);
