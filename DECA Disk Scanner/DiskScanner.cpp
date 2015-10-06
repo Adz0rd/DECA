@@ -38,6 +38,71 @@ void DiskScanner::printCompareSig(unsigned char *sig1, unsigned char *sig2, int 
 	printf("... ");
 }
 
+
+int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
+{
+	char *chSig1 = new char[sigSize + 1];
+	char *chSig2 = new char[sigSize + 1];
+
+	long sig1Val = 0;
+	long sig2Val = 0;
+
+	for (int i = 0; i < sigSize; i++)
+	{
+		chSig1[i] = sig1[i];
+		chSig2[i] = sig2[i];
+	}
+
+	chSig1[sigSize] = '\0';
+	chSig2[sigSize] = '\0';
+
+	sig1Val = strtol(chSig1, NULL, 16);
+	sig2Val = strtol(chSig2, NULL, 16);
+
+	delete[] chSig1;
+	delete[] chSig2;
+
+	if (sig1Val > sig2Val)
+		return 1;
+	else if (sig1Val < sig2Val)
+		return -1;
+	else
+		return 0;
+}
+
+int DiskScanner::binarySearch(unsigned char *arrayList, unsigned char *sig, int min, int max, int sigSize)
+{
+	// Not found.
+	if (min > max)
+		return -1;
+
+	// Find the midpoint.
+	int mid = min + ((max - min) / 2);
+
+	// Get to the middle of the array list.
+	unsigned char *arrayListPtr = arrayList;
+	arrayListPtr += (mid*sigSize);
+
+	// Check to see if the middle signature is greater/less than the key sig.
+	int res = hexCheck(arrayListPtr, sig, sigSize);
+
+	// Middle sig is greater.
+	if (res == 1)
+	{
+		binarySearch(arrayList, sig, min, mid - 1, sigSize);
+	}
+	// Key sig is greater.
+	else if (res == -1)
+	{
+		binarySearch(arrayList, sig, mid + 1, max, sigSize);
+	}
+	// Key has been found.
+	else
+		return 0;
+
+	return -1;
+}
+
 void DiskScanner::buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset)
 {
 	// Build the scanner object.
@@ -243,6 +308,80 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 	delete chunkData;
 	delete headerSet;
 	delete footerSet;
+
+	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
+
+	return 0;
+}
+
+int DiskScanner::scanChunkBST(SIG_ARR *sigArray, Response *returnStruct)
+{
+	// Temporary pointer to the signature structure.
+	SIG_ARR *sigPtr = sigArray;
+	int uCharSize = sizeof(unsigned char);
+
+	// Reserve space for chunk data.
+	unsigned char *chunkData = new unsigned char[this->sectorSize*uCharSize];
+	unsigned char *chunkPtr;
+	DWORD bytesRead = 0;
+
+	// Store the headers and footers.
+	unsigned char *headerSet = new unsigned char[sigPtr->maxSignatureSize*this->chunkSize];
+	unsigned char *footerSet = new unsigned char[sigPtr->maxSignatureSize*this->chunkSize];
+
+	unsigned char *headerSetPtr = headerSet;
+	unsigned char *footerSetPtr = footerSet;
+
+	// Scan the chunks into memory; (i == sector number).
+	for (unsigned int i = 0; i < this->chunkSize; i++)
+	{
+		// Read in the sector.
+		if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize, &bytesRead, NULL)))
+			return -1;
+
+		// Get a pointer to the start of the data.
+		chunkPtr = chunkData;
+
+		// Add the headers into a temporary buffer.
+		memcpy(headerSetPtr, chunkPtr, uCharSize*sigPtr->maxSignatureSize);
+		headerSetPtr += sigPtr->maxSignatureSize*uCharSize;
+
+		// Add the footers into a temporary buffer.
+		chunkPtr += (this->sectorSize*uCharSize) - (sigPtr->maxSignatureSize*uCharSize);
+		memcpy(footerSetPtr, chunkPtr, uCharSize*sigPtr->maxSignatureSize);
+		footerSetPtr += sigPtr->maxSignatureSize*uCharSize;
+	}
+
+	// Reset the chunk pointer to the start of the data.
+	chunkPtr = chunkData;
+
+	// Create the response struct.
+	Response *responsePtr = new Response;
+
+	// Initialise the struct with signature IDs.
+	for (unsigned int i = 0; i < sigPtr->numSigPairs; i++)
+	{
+		responsePtr->scanResultsArr[i] = new ScanResult;
+		responsePtr->scanResultsArr[i]->sigID = sigPtr->sigArray[i]->sigID;
+		responsePtr->scanResultsArr[i]->footerCount = 0;
+		responsePtr->scanResultsArr[i]->headerCount = 0;
+	}
+
+	// Reset the scanning pointers.
+	headerSetPtr = headerSet;
+	footerSetPtr = footerSet;
+
+	// Check each signature in the signature database with each signature found in the scanning.
+	for (unsigned int i = 0; i < sigPtr->numSigPairs; i++)
+	{
+		if (binarySearch(chunkPtr, sigPtr->sigArray[i]->sigHeader, 0, this->chunkSize, sigPtr->maxSignatureSize) == 0)
+			responsePtr->scanResultsArr[i]->headerCount++;
+	}
+
+	// Free memory and return results.
+	delete[] chunkData;
+	delete[] headerSet;
+	delete[] footerSet;
 
 	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
 
