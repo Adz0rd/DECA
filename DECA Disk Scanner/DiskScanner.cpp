@@ -308,9 +308,9 @@ int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
 	delete[] chunkData;
 	delete[] headerSet;
 	delete[] footerSet;
-	/*
+	
 	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
-	*/
+	
 	return 0;
 }
 
