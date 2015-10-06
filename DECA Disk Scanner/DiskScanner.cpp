@@ -390,7 +390,7 @@ int DiskScanner::scanChunkBST(SIG_ARR *sigArray, Response *returnStruct)
 
 void DiskScanner::readAttributes(SIG_ARR *sigArray)
 {
-	printf("maxSignatureSize: %d\nnumSigPairs: %d\n", sigArray->maxSignatureSize, sigArray->numSigPairs);
+	printf("maxSignatureSize: %d\nnumSigPairs: %d\nsigID: %d\n", sigArray->maxSignatureSize, sigArray->numSigPairs, sigArray->sigArray[0]->sigID);
 }
 
 int DiskScanner::scanChunkTest(SIG_ARR *sigArray)
