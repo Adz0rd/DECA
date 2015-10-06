@@ -66,8 +66,6 @@ namespace DECA_Interaction_Spike
             //Declare the result struct in memory
             Model.Scan.Response ScanResponse = new Model.Scan.Response();
 
-            
-
             //Mount volume
             if (mountVolume(DriveScanner) == 0)
             {
