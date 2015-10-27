@@ -39,7 +39,7 @@ namespace DECA_Initial_Library_Parser
                     {
                         writer.WriteStartElement("Signature");
                         writer.WriteElementString("Name", libraryLine[0]);
-                        writer.WriteElementString("HeaderSignature", libraryLine[1]);
+                        writer.WriteElementString("HeaderSignature", libraryLine[1].Replace(" ", string.Empty));
                         writer.WriteElementString("FooterSignature", null);
                         writer.WriteElementString("Offset", "0");
                         writer.WriteElementString("FileExtension", libraryLine[4]);

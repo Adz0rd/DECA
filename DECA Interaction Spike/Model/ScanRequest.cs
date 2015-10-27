@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace DECA_Interaction_Spike.Model
 {
-    class Signature
+    class ScanRequest
     {
         [StructLayout(LayoutKind.Sequential), Serializable]
         public struct SignatureData
@@ -17,10 +17,11 @@ namespace DECA_Interaction_Spike.Model
             public string sigHeader;
             [MarshalAs(UnmanagedType.LPStr)]
             public string sigFooter;
+            public IntPtr next;
         }
 
         [StructLayout(LayoutKind.Sequential), Serializable]
-        public struct Library
+        public struct Request
         {
             public UInt32 maxSignatureSize;
             public UInt32 numSigPairs;

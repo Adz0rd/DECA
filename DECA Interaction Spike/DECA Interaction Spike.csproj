@@ -62,8 +62,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Model\Scan.cs" />
-    <Compile Include="Model\Signature.cs" />
+    <Compile Include="Model\ScanResponse.cs" />
+    <Compile Include="Model\ScanRequest.cs" />
+    <Compile Include="Model\SignatureLibrary.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

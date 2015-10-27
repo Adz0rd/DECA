@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace DECA_Interaction_Spike.Model
 {
-    class Scan
+    class ScanResponse
     {
         [StructLayout(LayoutKind.Sequential), Serializable]
         public struct ScanResult
@@ -15,6 +15,7 @@ namespace DECA_Interaction_Spike.Model
             public UInt32 sigId;
             public UInt32 headerCount;
             public UInt32 footerCount;
+            public IntPtr next;
         }
 
         [StructLayout(LayoutKind.Sequential), Serializable]
