@@ -14,14 +14,13 @@ Written by Taylor.
 #define DEBUG_MODE 1
 
 extern "C"
-{/*
+{
 	struct SIG_DATA
 	{
 		unsigned int sigID;
 		unsigned char *sigHeader;
-		unsigned char *sigFooter;
 	};
-
+	/*
 	// Structure for storing signature information.
 	struct SIG_ARR
 	{
@@ -30,7 +29,7 @@ extern "C"
 
 	SIG_DATA *sigArray[1];
 	};
-	*/
+	
 
 	struct SIG_DATA
 	{
@@ -39,7 +38,7 @@ extern "C"
 		unsigned char *sigFooter;
 		SIG_DATA *next;
 	};
-
+	*/
 	// Structure for storing signature information.
 	struct SIG_ARR
 	{
@@ -49,13 +48,20 @@ extern "C"
 		SIG_DATA *sigArray;
 	};
 
-
+	/*
 	struct ScanResult
 	{
 		unsigned int sigID;
 		unsigned int headerCount;
 		unsigned int footerCount;
 		ScanResult *next;
+	};
+	*/
+
+	struct ScanResult
+	{
+		unsigned int sigID;
+		unsigned int headerCount;
 	};
 
 	struct Response
@@ -89,12 +95,16 @@ class IDiskScanner
 public:
 	// Initialisation methods.
 	virtual ~IDiskScanner() = 0;
-	virtual void buildScanner(unsigned int, unsigned int, char *, unsigned int) = 0;
+	virtual void buildScanner(unsigned int, unsigned int, char *, unsigned int, unsigned int) = 0;
 	virtual int mountVolume() = 0;
 	virtual int unmountVolume() = 0;
 
+	virtual void addSignature(SIG_DATA *sigData) = 0;
+	virtual void lockSignatureList() = 0;
+
 	// Scanning methods.
 	virtual int scanChunk(SIG_ARR*, Response*) = 0;
+	virtual unsigned int *scanChunkDatabase() = 0;
 	virtual int scanChunkBST(SIG_ARR*, Response*) = 0;
 	virtual ScanResult *scanChunkList(SIG_ARR*) = 0;
 
@@ -109,14 +119,18 @@ public:
 	~DiskScanner();
 
 	// Build the scanner object.
-	void buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset);
+	void buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize);
 
 	// Mount and unmount the volume.
 	int mountVolume();
 	int unmountVolume();
 
+	void addSignature(SIG_DATA *sigData);
+	void lockSignatureList();
+
 	// Scan the first/next available chunk.
 	int scanChunk(SIG_ARR *sigArray, Response *returnStruct);
+	unsigned int *scanChunkDatabase();
 	int scanChunkBST(SIG_ARR *sigArray, Response *returnStruct);
 	ScanResult *scanChunkList(SIG_ARR *sigArray);
 	int scanChunkTest(SIG_ARR *sigArray);
@@ -130,6 +144,11 @@ private:
 	unsigned int sectorSize;
 	unsigned int startOffset;
 	char *diskPath;
+	SIG_ARR *sigArray;
+	SIG_DATA *sigDataList[1];
+	unsigned int numSigs;
+	unsigned int maxSize;
+	unsigned int *scanResult;
 
 	// Methods for internal printing and comparison.
 	int compareSig(unsigned char *sig1, unsigned char *sig2, int size);
@@ -154,9 +173,9 @@ extern "C"
 
 	}
 
-	DISKSCANNER_API void buildScanner(IDiskScanner *diskScanner, unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset)
+	DISKSCANNER_API void buildScanner(IDiskScanner *diskScanner, unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize)
 	{
-		return diskScanner->buildScanner(chunkSize, sectorSize, diskPath, startOffset);
+		return diskScanner->buildScanner(chunkSize, sectorSize, diskPath, startOffset, maxSize);
 	}
 
 	DISKSCANNER_API int mountVolume(IDiskScanner *diskScanner)
@@ -193,5 +212,20 @@ extern "C"
 	DISKSCANNER_API int scanChunkTest(IDiskScanner *diskScanner, SIG_ARR *sigArray)
 	{
 		return diskScanner->scanChunkTest(sigArray);
+	}
+
+	DISKSCANNER_API void addSignature(IDiskScanner *diskScanner, SIG_DATA *sigData)
+	{
+		diskScanner->addSignature(sigData);
+	}
+
+	DISKSCANNER_API void lockSignatureList(IDiskScanner *diskScanner)
+	{
+		diskScanner->lockSignatureList();
+	}
+
+	DISKSCANNER_API unsigned int *scanChunkDatabase(IDiskScanner *diskScanner)
+	{
+		return diskScanner->scanChunkDatabase();
 	}
 }

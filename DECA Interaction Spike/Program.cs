@@ -103,7 +103,7 @@ namespace DECA_Interaction_Spike
 
                 //Configure the scanner
                 //buildScanner(DriveScanner, Convert.ToUInt32(args[0]), 1024, args[1], 0);
-                buildScanner(DriveScanner, 16410, 512, @"\\.\F:", 0);
+                buildScanner(DriveScanner, 16410, 512, @"\\.\E:", 0);
 
                 //Mount volume
                 if (mountVolume(DriveScanner) == 0)
@@ -159,7 +159,7 @@ namespace DECA_Interaction_Spike
                     //    Marshal.StructureToPtr(sigArr2, sigArr.next, false);
                     //    Marshal.StructureToPtr(sigArr, SignatureLibrary.sigArr, false);
 
-                    IntPtr response = scanChunkList(DriveScanner, request);
+                    //IntPtr response = scanChunkList(DriveScanner, request);
 
                     //Model.Scan.ScanResult scanResults = new Model.Scan.ScanResult();
                     //scanResults = (Model.Scan.ScanResult)Marshal.PtrToStructure(response, typeof(Model.Scan.ScanResult));
