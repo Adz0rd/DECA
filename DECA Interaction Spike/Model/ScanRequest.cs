@@ -15,17 +15,6 @@ namespace DECA_Interaction_Spike.Model
             public UInt32 sigId;
             [MarshalAs(UnmanagedType.LPStr)]
             public string sigHeader;
-            [MarshalAs(UnmanagedType.LPStr)]
-            public string sigFooter;
-            public IntPtr next;
-        }
-
-        [StructLayout(LayoutKind.Sequential), Serializable]
-        public struct Request
-        {
-            public UInt32 maxSignatureSize;
-            public UInt32 numSigPairs;
-            public IntPtr sigArr;
         }
     }
 }

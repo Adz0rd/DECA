@@ -17,25 +17,25 @@ namespace DECA_Interaction_Spike
         public static extern IntPtr createScanner();
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void buildScanner(IntPtr driveScanner, UInt32 scanChunkSize, UInt32 sectorSize, string pathToDisk, UInt32 offset);
-
-        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void disposeScanner(IntPtr driveScanner);
-
-        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int scanChunk(IntPtr driveScanner, Model.ScanRequest.Request signatureLibrary, IntPtr scanResponse);
+        public static extern void buildScanner(IntPtr driveScanner, UInt32 scanChunkSize, UInt32 sectorSize, string pathToDisk, UInt32 offset, UInt32 maxSignatureSize);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern int mountVolume(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void readSigData(IntPtr driveScanner, Model.ScanRequest.Request signatureLibrary);
+        public static extern void addSignature(IntPtr driveScanner, Model.ScanRequest.SignatureData signature);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr scanChunkList(IntPtr driveScanner, Model.ScanRequest.Request signatureLibrary);
+        public static extern void lockSignatureList(IntPtr diskScanner);
+
+        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern UInt32[] scanChunkDatabase(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void unmountVolume();
+
+        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void disposeScanner(IntPtr driveScanner);
         #endregion
 
         public static string ConvertHexToString(string HexValue)
@@ -49,42 +49,6 @@ namespace DECA_Interaction_Spike
             return StrValue;
         }
 
-        public static Model.ScanRequest.Request ConvertSignatureLibraryToScanRequest(Model.SignatureLibrary.Signatures signatureLibrary)
-        {
-            UInt32 i = 460;
-
-            //Initialize the first signature manually
-            var head = new Model.ScanRequest.SignatureData();
-            head.sigId = i;
-            head.sigHeader = ConvertHexToString(signatureLibrary.Signature.ToArray()[i].HeaderSignature);
-            head.sigFooter = ConvertHexToString(signatureLibrary.Signature.ToArray()[i].FooterSignature);
-
-            Model.ScanRequest.SignatureData current = head;
-
-            //for (i = 1; i < signatureLibrary.Signature.Length; i++)
-            //{
-            //    var subSigArrayElement = new Model.ScanRequest.SignatureData();
-            //    subSigArrayElement.sigId = i;
-            //    subSigArrayElement.sigHeader = signatureLibrary.Signature.ToArray()[i].HeaderSignature;
-            //    subSigArrayElement.sigFooter = signatureLibrary.Signature.ToArray()[i].FooterSignature;
-
-            //    int subSigSize = Marshal.SizeOf(subSigArrayElement);
-            //    current.next = Marshal.AllocCoTaskMem(subSigSize);
-            //    Marshal.StructureToPtr(subSigArrayElement, current.next, false);
-
-            //    current = subSigArrayElement;
-            //}
-
-            int sigSize = Marshal.SizeOf(head);
-            Model.ScanRequest.Request request = new Model.ScanRequest.Request();
-            request.numSigPairs = 1;//(UInt32)signatureLibrary.Signature.Length;
-            request.maxSignatureSize = 3;
-            request.sigArr = Marshal.AllocCoTaskMem(sigSize);
-            Marshal.StructureToPtr(head, request.sigArr, false);
-
-            return request;
-        }
-
         static void Main(string[] args)
         {
             //Load signature library
@@ -95,118 +59,48 @@ namespace DECA_Interaction_Spike
                 XmlSerializer serializer = new XmlSerializer(typeof(Model.SignatureLibrary.Signatures));
 
                 Model.SignatureLibrary.Signatures SignatureLibrary = (Model.SignatureLibrary.Signatures)serializer.Deserialize(libraryReader);
-
                 libraryReader.Close();
+
+                int currentMaxSignatureSize = 0;
+                for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
+                {
+                    if (SignatureLibrary.Signature[i].HeaderSignature.Length > currentMaxSignatureSize)
+                    {
+                        currentMaxSignatureSize = SignatureLibrary.Signature[i].HeaderSignature.Length;
+                    }
+                }
 
                 //Initialize the drive scanner
                 IntPtr DriveScanner = createScanner();
 
                 //Configure the scanner
                 //buildScanner(DriveScanner, Convert.ToUInt32(args[0]), 1024, args[1], 0);
-                buildScanner(DriveScanner, 16410, 512, @"\\.\E:", 0);
+                buildScanner(DriveScanner, 16410, 512, @"\\.\F:", 0, (UInt32)currentMaxSignatureSize);
 
                 //Mount volume
                 if (mountVolume(DriveScanner) == 0)
                 {
-                    //Model.ScanRequest.SignatureData previous = new Model.ScanRequest.SignatureData();
-                    IntPtr childPtr = IntPtr.Zero;
-
-                    for(int i = SignatureLibrary.Signature.Length - 1; i >= 0; i--)
+                    for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
                     {
-                        if (childPtr == IntPtr.Zero)
-                        {
-                            //No struct has been built yet, create new struct
-                            Model.ScanRequest.SignatureData child = new Model.ScanRequest.SignatureData();
-                            child.sigId = (UInt32)i;
-                            child.sigHeader = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].HeaderSignature);
-                            child.sigFooter = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].FooterSignature);
-
-                            //Allocate memory for the current and move the pointer to it
-                            int sigSize = Marshal.SizeOf(child);
-                            childPtr = Marshal.AllocCoTaskMem(sigSize);
-                            Marshal.StructureToPtr(child, childPtr, false);
-
-                        } else {
-                            //A child exists, build its parent
-                            Model.ScanRequest.SignatureData parent = new Model.ScanRequest.SignatureData();
-                            parent.sigId = (UInt32)i;
-                            parent.sigHeader = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].HeaderSignature);
-                            parent.sigFooter = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].FooterSignature);
-                            
-                            //Link the child to its parent
-                            parent.next = Marshal.AllocCoTaskMem(Marshal.SizeOf(childPtr));
-                            parent.next = childPtr;
-
-                            //Make this parent into a child for the next parent
-                            childPtr = Marshal.ReAllocCoTaskMem(childPtr, Marshal.SizeOf(parent));
-                            Marshal.StructureToPtr(parent, childPtr, true);
-                        }
+                        Model.ScanRequest.SignatureData signature = new Model.ScanRequest.SignatureData();
+                        signature.sigId = (UInt32)i;
+                        signature.sigHeader = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].HeaderSignature);
+                        addSignature(DriveScanner, signature);
                     }
 
-                    //Construct the signature library
-                    Model.ScanRequest.Request request = new Model.ScanRequest.Request()
-                    {
-                        numSigPairs = (UInt32)SignatureLibrary.Signature.Length,
-                        maxSignatureSize = 3,
-                        sigArr = childPtr
-                    };
+                    lockSignatureList(DriveScanner);
 
-                    //int sigSize2 = Marshal.SizeOf(sigArr2);
-                    //sigArr.next = Marshal.AllocCoTaskMem(sigSize2);
+                    UInt32[] result = scanChunkDatabase(DriveScanner);
 
-                    //try
-                    //{
-                    //    Marshal.StructureToPtr(sigArr2, sigArr.next, false);
-                    //    Marshal.StructureToPtr(sigArr, SignatureLibrary.sigArr, false);
+                    unmountVolume();
 
-                    //IntPtr response = scanChunkList(DriveScanner, request);
-
-                    //Model.Scan.ScanResult scanResults = new Model.Scan.ScanResult();
-                    //scanResults = (Model.Scan.ScanResult)Marshal.PtrToStructure(response, typeof(Model.Scan.ScanResult));
-
-                    //Console.WriteLine("The value of the first sigId:" + scanResults.sigId);
-
-                    //Model.Scan.ScanResult scanResults2 = new Model.Scan.ScanResult();
-                    //scanResults2 = (Model.Scan.ScanResult)Marshal.PtrToStructure(scanResults.next, typeof(Model.Scan.ScanResult));
-                    //Console.WriteLine("The value of the first sigId:" + scanResults2.sigId);
-                    //}
-                    //finally
-                    //{
-                    //    Marshal.FreeCoTaskMem(sigArr.next);
-                    //    Marshal.FreeCoTaskMem(SignatureLibrary.sigArr);
-                    //}
+                    disposeScanner(DriveScanner);
                 }
 
 
             } else {
                 System.Environment.Exit(1);
             }
-
-
-
-            
-
-            
-
-            
-
-
-
-
-
-
-            //IntPtr ResponsePointer = Marshal.AllocHGlobal(Marshal.SizeOf(new Model.Scan.Response()));
-
-
-
-
-
-            //Unmount the volume
-            //unmountVolume();
-
-            //Dispose of the scanner
-            //disposeScanner(DriveScanner);
-
             //Print results
             Console.ReadKey();
         }
