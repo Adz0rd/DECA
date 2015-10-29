@@ -6,6 +6,7 @@ Written by Taylor.
 #include <windows.h>
 #include <winioctl.h>
 #include <stdio.h>
+#include <vector>
 
 #ifdef DECADISKSCANNER_EXPORTS
 #define DISKSCANNER_API __declspec(dllexport)
@@ -145,7 +146,7 @@ private:
 	unsigned int startOffset;
 	char *diskPath;
 	SIG_ARR *sigArray;
-	SIG_DATA *sigDataList[1];
+	std::vector<SIG_DATA> sigDataList;
 	unsigned int numSigs;
 	unsigned int maxSize;
 	unsigned int *scanResult;

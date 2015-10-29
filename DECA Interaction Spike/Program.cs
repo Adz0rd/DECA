@@ -29,7 +29,7 @@ namespace DECA_Interaction_Spike
         public static extern void lockSignatureList(IntPtr diskScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern UInt32[] scanChunkDatabase(IntPtr driveScanner);
+        public static extern IntPtr scanChunkDatabase(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void unmountVolume();
@@ -90,7 +90,7 @@ namespace DECA_Interaction_Spike
 
                     lockSignatureList(DriveScanner);
 
-                    UInt32[] result = scanChunkDatabase(DriveScanner);
+                    IntPtr result = scanChunkDatabase(DriveScanner);
 
                     unmountVolume();
 

@@ -29,13 +29,13 @@ int DiskScanner::compareSig(unsigned char *sig1, unsigned char *sig2, int size)
 
 void DiskScanner::printCompareSig(unsigned char *sig1, unsigned char *sig2, int size)
 {
-	printf("s1=");
+	printf(">> s1=");
 	for (int i = 0; i < size; i++)
 		printf("%X", sig1[i]);
 	printf(", s2=");
 	for (int i = 0; i < size; i++)
 		printf("%X", sig2[i]);
-	printf("... ");
+	printf("...");
 }
 
 
@@ -194,42 +194,42 @@ int DiskScanner::unmountVolume()
 
 void DiskScanner::addSignature(SIG_DATA *sigData)
 {
-	if(numSigs > 0)
-	{
-		this->sigDataList[numSigs] = new SIG_DATA;
-		this->sigDataList[numSigs]->sigID = sigData->sigID;
-		this->sigDataList[numSigs]->sigHeader = new unsigned char[4];
+	printf(">> Adding Signature: %u", sigData->sigID);
+	SIG_DATA dataPoint;
 
-		for (int i = 0; i < maxSize; i++)
-			this->sigDataList[numSigs]->sigHeader[i] = sigData->sigHeader[i];
-	}
-	else
-	{
-		this->sigDataList[0]->sigID = sigData->sigID;
-		this->sigDataList[0]->sigHeader = new unsigned char[4];
+	dataPoint.sigID = sigData->sigID;
+	dataPoint.sigHeader = new unsigned char[maxSize];
 
-		for (int i = 0; i < maxSize; i++)
-			this->sigDataList[0]->sigHeader[i] = sigData->sigHeader[i];
-	}
+	for (int i = 0; i < maxSize; i++)
+		dataPoint.sigHeader[i] = sigData->sigHeader[i];
 
-	numSigs++;
+	printf("... Complete\n");
+	this->sigDataList.push_back(dataPoint);
 }
 
 void DiskScanner::lockSignatureList()
 {
-	this->scanResult = new unsigned int[this->numSigs*2];
+	this->scanResult = new unsigned int[sigDataList.size()*2];
 
-	for (unsigned int i = 0; i < this->numSigs; i++)
+	int i = 0;
+	for (int j = 0; j < sigDataList.size(); j++)
 	{
-		this->scanResult[i] = sigDataList[i]->sigID;
+		this->scanResult[i] = this->sigDataList[j].sigID;
 		this->scanResult[i+1] = 0;
+		i+=2;
 	}
+
+	this->numSigs = sigDataList.size();
 }
 
 unsigned int *DiskScanner::scanChunkDatabase()
 {
 	if (this->numSigs < 1)
 		return NULL;
+
+	#ifdef DEBUG_MODE
+	printf(">> Beginning Scan:\n");
+	#endif
 
 	int uCharSize = sizeof(unsigned char);
 
@@ -256,7 +256,7 @@ unsigned int *DiskScanner::scanChunkDatabase()
 		memcpy(headerSetPtr, chunkPtr, uCharSize*this->maxSize);
 		headerSetPtr += maxSize*uCharSize;
 	}
-
+	// TODO: CHECK TO SEE IF ALL VALUES ARE 0, IF SO RETURN.
 	// Reset the chunk pointer to the start of the data.
 	headerSetPtr = headerSet;
 
@@ -265,11 +265,11 @@ unsigned int *DiskScanner::scanChunkDatabase()
 		for (unsigned int j = 0; j < this->numSigs; j++)
 		{
 			#ifdef DEBUG_MODE
-			printCompareSig(headerSetPtr, sigDataList[i]->sigHeader, maxSize*uCharSize);
+			printCompareSig(headerSetPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize);
 			#endif
 
 			// Compare the current signature with the valid header.
-			if (compareSig(headerSetPtr, sigDataList[i]->sigHeader, maxSize*uCharSize) == 0)
+			if (compareSig(headerSetPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize) == 0)
 			{
 				#ifdef DEBUG_MODE
 				printf("match\n");
@@ -278,6 +278,13 @@ unsigned int *DiskScanner::scanChunkDatabase()
 				// The signatures are equal, get the ID and incrememt the resultSet.
 				this->scanResult[i * 2]++;
 			}
+			else
+			{
+				#ifdef DEBUG_MODE
+				printf("no match\n");
+				#endif
+			}
+
 
 			headerSetPtr += maxSize*uCharSize;
 		}
@@ -286,6 +293,19 @@ unsigned int *DiskScanner::scanChunkDatabase()
 	// Free memory and return results.
 	delete[] chunkData;
 	delete[] headerSet;
+
+	#ifdef DEBUG_MODE
+
+	printf(">> Scan Results\n");
+	int j = 0;
+	for (int i = 0; i < this->sigDataList.size(); i++)
+	{
+		printf(">> Signature ID:%u\t Headers Found: %u\n", scanResult[j], scanResult[j+1]);
+		j += 2;
+	}
+
+	printf(">> Scanning complete.\n");
+	#endif
 
 	return this->scanResult;
 }
