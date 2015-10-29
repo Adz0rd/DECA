@@ -16,78 +16,12 @@ Written by Taylor.
 
 extern "C"
 {
+	// Signature data structure.
 	struct SIG_DATA
 	{
 		unsigned int sigID;
 		unsigned char *sigHeader;
 	};
-	/*
-	// Structure for storing signature information.
-	struct SIG_ARR
-	{
-	unsigned int maxSignatureSize;
-	unsigned int numSigPairs;
-
-	SIG_DATA *sigArray[1];
-	};
-	
-
-	struct SIG_DATA
-	{
-		unsigned int sigID;
-		unsigned char *sigHeader;
-		unsigned char *sigFooter;
-		SIG_DATA *next;
-	};
-	*/
-	// Structure for storing signature information.
-	struct SIG_ARR
-	{
-		unsigned int maxSignatureSize;
-		unsigned int numSigPairs;
-
-		SIG_DATA *sigArray;
-	};
-
-	/*
-	struct ScanResult
-	{
-		unsigned int sigID;
-		unsigned int headerCount;
-		unsigned int footerCount;
-		ScanResult *next;
-	};
-	*/
-
-	struct ScanResult
-	{
-		unsigned int sigID;
-		unsigned int headerCount;
-	};
-
-	struct Response
-	{
-		ScanResult *scanResults;
-	};
-
-	/* LINKED LIST TESTING.
-	struct SIG_DATA_LIST
-	{
-		unsigned int sigID;
-		unsigned char *sigHeader;
-		unsigned char *sigFooter;
-		SIG_DATA_LIST *next;
-	};
-
-	// Structure for storing signature information.
-	struct SIG_ARR_LIST
-	{
-		unsigned int maxSignatureSize;
-		unsigned int numSigPairs;
-
-		SIG_DATA_LIST *sigArray;
-	};
-	*/
 }
 
 // DiskScanner interface class.
@@ -100,23 +34,21 @@ public:
 	virtual int mountVolume() = 0;
 	virtual int unmountVolume() = 0;
 
+	// Signature loading methods.
 	virtual void addSignature(SIG_DATA *sigData) = 0;
 	virtual void lockSignatureList() = 0;
 
 	// Scanning methods.
-	virtual int scanChunk(SIG_ARR*, Response*) = 0;
-	virtual unsigned int *scanChunkDatabase() = 0;
-	virtual int scanChunkBST(SIG_ARR*, Response*) = 0;
-	virtual ScanResult *scanChunkList(SIG_ARR*) = 0;
-
-	// Testing methods.
-	virtual void readAttributes(SIG_ARR*) = 0;
-	virtual int scanChunkTest(SIG_ARR*) = 0;
+	virtual unsigned int *scanChunk() = 0;
+	virtual unsigned int *scanChunk_BST() = 0;
+	virtual unsigned int *scanChunkBySector() = 0;
+	virtual unsigned int *scanChunkBySector_BST() = 0;
 };
 
 class DiskScanner : public IDiskScanner
 {
 public:
+	// Constructors/Destructors.
 	~DiskScanner();
 
 	// Build the scanner object.
@@ -126,36 +58,32 @@ public:
 	int mountVolume();
 	int unmountVolume();
 
-	void addSignature(SIG_DATA *sigData);
-	void lockSignatureList();
+	// Signature initilisation methods.
+	void addSignature(SIG_DATA *sigData);		// Add a signature to the database.
+	void lockSignatureList();					// Lock signatures in for scanning.
 
-	// Scan the first/next available chunk.
-	int scanChunk(SIG_ARR *sigArray, Response *returnStruct);
-	unsigned int *scanChunkDatabase();
-	int scanChunkBST(SIG_ARR *sigArray, Response *returnStruct);
-	ScanResult *scanChunkList(SIG_ARR *sigArray);
-	int scanChunkTest(SIG_ARR *sigArray);
-
-	// Testing functions.
-	void readAttributes(SIG_ARR* sigArray);
+	// Signature scanning methods.
+	unsigned int *scanChunk();						// Scan a chunk one sector at a time and then compare all sectors/signatures.
+	unsigned int *scanChunk_BST();					// Scan a chunk one sector at a time and then compare utilising a Binary Search Tree algorithm.
+	unsigned int *scanChunkBySector();				// Scan a chunk and compare signatures sector by sector.
+	unsigned int *scanChunkBySector_BST();			// Scan a chunk and compare signatures sector by sector utilising a Binary Search Tree algorithm.
 
 private:
-	HANDLE diskHandle;
-	unsigned int chunkSize;
-	unsigned int sectorSize;
-	unsigned int startOffset;
-	char *diskPath;
-	SIG_ARR *sigArray;
-	std::vector<SIG_DATA> sigDataList;
-	unsigned int numSigs;
-	unsigned int maxSize;
-	unsigned int *scanResult;
+	HANDLE diskHandle;						// Win32 handle to disk.
+	unsigned int chunkSize;					// Number of sectors to scan per scanning method call.
+	unsigned int sectorSize;				// Size of each sector.
+	unsigned int startOffset;				// Starting scan location.
+	char *diskPath;							// Path to the disk.
+	std::vector<SIG_DATA> sigDataList;		// Image data list.
+	unsigned int numSigs;					// Total number of signatures scanned.
+	unsigned int maxSize;					// Maximum signature size.
+	unsigned int *scanResult;				// Return array.
 
 	// Methods for internal printing and comparison.
-	int compareSig(unsigned char *sig1, unsigned char *sig2, int size);
-	void printCompareSig(unsigned char *sig1, unsigned char *sig2, int size);
-	int binarySearch(unsigned char *arrayList, unsigned char *sig, int min, int max, int sigSize);
-	int hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize);
+	int compareSig(unsigned char *sig1, unsigned char *sig2, int size);				// Signature comparison.
+	void printCompareSig(unsigned char *sig1, unsigned char *sig2, int size);		// Signature comparison with output.
+	int binarySearch(unsigned char *sig, int min, int max, int sigSize);			// Recursive binary seach.
+	int hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize);			// Compare hex values.
 };
 
 // Exported C functions for DLL communication from client.
@@ -190,43 +118,34 @@ extern "C"
 	}
 
 	// Scan the first/next available chunk.
-	DISKSCANNER_API int scanChunk(IDiskScanner *diskScanner, SIG_ARR *sigArray, Response *returnStruct)
-	{
-		return diskScanner->scanChunk(sigArray, returnStruct);
-	}
-
-	DISKSCANNER_API int scanChunkBST(IDiskScanner *diskScanner, SIG_ARR *sigArray, Response *returnStruct)
-	{
-		return diskScanner->scanChunk(sigArray, returnStruct);
-	}
-
-	DISKSCANNER_API ScanResult *scanChunkList(IDiskScanner *diskScanner, SIG_ARR *sigArray)
-	{
-		return diskScanner->scanChunkList(sigArray);
-	}
-
-	DISKSCANNER_API void readSigData(IDiskScanner *diskScanner, SIG_ARR *sigArray)
-	{
-		diskScanner->readAttributes(sigArray);
-	}
-
-	DISKSCANNER_API int scanChunkTest(IDiskScanner *diskScanner, SIG_ARR *sigArray)
-	{
-		return diskScanner->scanChunkTest(sigArray);
-	}
-
 	DISKSCANNER_API void addSignature(IDiskScanner *diskScanner, SIG_DATA *sigData)
 	{
 		diskScanner->addSignature(sigData);
 	}
+
 
 	DISKSCANNER_API void lockSignatureList(IDiskScanner *diskScanner)
 	{
 		diskScanner->lockSignatureList();
 	}
 
-	DISKSCANNER_API unsigned int *scanChunkDatabase(IDiskScanner *diskScanner)
+	DISKSCANNER_API unsigned int *scanChunk(IDiskScanner *diskScanner)
 	{
-		return diskScanner->scanChunkDatabase();
+		return diskScanner->scanChunk();
+	}
+
+	DISKSCANNER_API unsigned int *scanChunk_BST(IDiskScanner *diskScanner)
+	{
+		return diskScanner->scanChunk_BST();
+	}
+
+	DISKSCANNER_API unsigned int *scanChunkBySector(IDiskScanner *diskScanner)
+	{
+		return diskScanner->scanChunkBySector();
+	}
+
+	DISKSCANNER_API unsigned int *scanChunkBySector_BST(IDiskScanner *diskScanner)
+	{
+		return diskScanner->scanChunkBySector_BST();
 	}
 }

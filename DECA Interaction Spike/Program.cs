@@ -29,7 +29,16 @@ namespace DECA_Interaction_Spike
         public static extern void lockSignatureList(IntPtr diskScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr scanChunkDatabase(IntPtr driveScanner);
+        public static extern IntPtr scanChunk(IntPtr driveScanner);
+
+        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr scanChunk_BST(IntPtr driveScanner);
+
+        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr scanChunkBySector(IntPtr driveScanner);
+
+        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern IntPtr scanChunkBySector_BST(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         public static extern void unmountVolume();
@@ -75,7 +84,7 @@ namespace DECA_Interaction_Spike
 
                 //Configure the scanner
                 //buildScanner(DriveScanner, Convert.ToUInt32(args[0]), 1024, args[1], 0);
-                buildScanner(DriveScanner, 16410, 512, @"\\.\F:", 0, (UInt32)currentMaxSignatureSize);
+                buildScanner(DriveScanner, 16410, 512, @"\\.\E:", 0, (UInt32)currentMaxSignatureSize);
 
                 //Mount volume
                 if (mountVolume(DriveScanner) == 0)
@@ -90,7 +99,7 @@ namespace DECA_Interaction_Spike
 
                     lockSignatureList(DriveScanner);
 
-                    IntPtr result = scanChunkDatabase(DriveScanner);
+                    IntPtr result = scanChunkBySector(DriveScanner);
 
                     unmountVolume();
 

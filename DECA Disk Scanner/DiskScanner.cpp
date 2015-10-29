@@ -11,7 +11,7 @@ DiskScanner::~DiskScanner()
 	delete diskPath;
 }
 
-int DiskScanner::compareSig(unsigned char *sig1, unsigned char *sig2, int size)
+inline int DiskScanner::compareSig(unsigned char *sig1, unsigned char *sig2, int size)
 {
 	unsigned char sig1Val = 0;
 	unsigned char sig2Val = 0;
@@ -70,7 +70,7 @@ int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
 		return 0;
 }
 
-int DiskScanner::binarySearch(unsigned char *arrayList, unsigned char *sig, int min, int max, int sigSize)
+int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 {
 	// Not found.
 	if (min > max)
@@ -80,21 +80,21 @@ int DiskScanner::binarySearch(unsigned char *arrayList, unsigned char *sig, int 
 	int mid = min + ((max - min) / 2);
 
 	// Get to the middle of the array list.
-	unsigned char *arrayListPtr = arrayList;
-	arrayListPtr += (mid*sigSize);
+	std::vector<SIG_DATA>::iterator sigDataIterator = this->sigDataList.begin();
+	sigDataIterator += mid;
 
 	// Check to see if the middle signature is greater/less than the key sig.
-	int res = hexCheck(arrayListPtr, sig, sigSize);
+	int res = hexCheck(sigDataIterator._Ptr->sigHeader, sig, sigSize);
 
 	// Middle sig is greater.
 	if (res == 1)
 	{
-		binarySearch(arrayList, sig, min, mid - 1, sigSize);
+		binarySearch(sig, min, mid - 1, sigSize);
 	}
 	// Key sig is greater.
 	else if (res == -1)
 	{
-		binarySearch(arrayList, sig, mid + 1, max, sigSize);
+		binarySearch(sig, mid + 1, max, sigSize);
 	}
 	// Key has been found.
 	else
@@ -194,35 +194,39 @@ int DiskScanner::unmountVolume()
 
 void DiskScanner::addSignature(SIG_DATA *sigData)
 {
+	#ifdef DEBUG_MODE
 	printf(">> Adding Signature: %u", sigData->sigID);
-	SIG_DATA dataPoint;
+	#endif
 
+	// Add a new signature from the sigData to the vector database.
+	SIG_DATA dataPoint;
 	dataPoint.sigID = sigData->sigID;
 	dataPoint.sigHeader = new unsigned char[maxSize];
 
-	for (int i = 0; i < maxSize; i++)
+	// Save the signature data.
+	for (unsigned int i = 0; i < maxSize; i++)
 		dataPoint.sigHeader[i] = sigData->sigHeader[i];
-
+	
+	#ifdef DEBUG_MODE
 	printf("... Complete\n");
+	#endif
 	this->sigDataList.push_back(dataPoint);
 }
 
 void DiskScanner::lockSignatureList()
 {
-	this->scanResult = new unsigned int[sigDataList.size()*2];
+	// Create an array to hold the header count results.
+	this->scanResult = new unsigned int[sigDataList.size()];
 
-	int i = 0;
-	for (int j = 0; j < sigDataList.size(); j++)
-	{
-		this->scanResult[i] = this->sigDataList[j].sigID;
-		this->scanResult[i+1] = 0;
-		i+=2;
-	}
+	// Set each header to 0 (Array index is the signature ID).
+	for (int i = 0; i < sigDataList.size(); i++)
+		this->scanResult[i] = 0;
 
+	// Save the size for faster reading.
 	this->numSigs = sigDataList.size();
 }
 
-unsigned int *DiskScanner::scanChunkDatabase()
+unsigned int *DiskScanner::scanChunk()
 {
 	if (this->numSigs < 1)
 		return NULL;
@@ -234,7 +238,7 @@ unsigned int *DiskScanner::scanChunkDatabase()
 	int uCharSize = sizeof(unsigned char);
 
 	// Reserve space for chunk data.
-	unsigned char *chunkData = new unsigned char[this->sectorSize*uCharSize];
+	unsigned char *chunkData = new unsigned char[this->sectorSize*uCharSize*this->chunkSize];
 	unsigned char *chunkPtr;
 	DWORD bytesRead = 0;
 
@@ -242,20 +246,23 @@ unsigned int *DiskScanner::scanChunkDatabase()
 	unsigned char *headerSet = new unsigned char[this->maxSize*this->chunkSize];
 	unsigned char *headerSetPtr = headerSet;
 
-	// Scan the chunks into memory; (i == sector number).
+	unsigned int numDiskSigs = 0;
+
+	// Read in the sector.
+	if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize*this->chunkSize, &bytesRead, NULL)))
+		return NULL;
+
+	// Get a pointer to the start of the data.
+	chunkPtr = chunkData;
+	headerSetPtr = headerSet;
+
 	for (unsigned int i = 0; i < this->chunkSize; i++)
 	{
-		// Read in the sector.
-		if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize, &bytesRead, NULL)))
-			return NULL;
-
-		// Get a pointer to the start of the data.
-		chunkPtr = chunkData;
-
-		// Add the headers into a temporary buffer.
 		memcpy(headerSetPtr, chunkPtr, uCharSize*this->maxSize);
 		headerSetPtr += maxSize*uCharSize;
+		chunkPtr += this->sectorSize;
 	}
+
 	// TODO: CHECK TO SEE IF ALL VALUES ARE 0, IF SO RETURN.
 	// Reset the chunk pointer to the start of the data.
 	headerSetPtr = headerSet;
@@ -276,7 +283,7 @@ unsigned int *DiskScanner::scanChunkDatabase()
 				#endif
 
 				// The signatures are equal, get the ID and incrememt the resultSet.
-				this->scanResult[i * 2]++;
+				this->scanResult[i]++;
 			}
 			else
 			{
@@ -297,11 +304,9 @@ unsigned int *DiskScanner::scanChunkDatabase()
 	#ifdef DEBUG_MODE
 
 	printf(">> Scan Results\n");
-	int j = 0;
 	for (int i = 0; i < this->sigDataList.size(); i++)
 	{
-		printf(">> Signature ID:%u\t Headers Found: %u\n", scanResult[j], scanResult[j+1]);
-		j += 2;
+		printf(">> Signature ID:%u\t Headers Found: %u\n", i, scanResult[i]);
 	}
 
 	printf(">> Scanning complete.\n");
@@ -310,220 +315,103 @@ unsigned int *DiskScanner::scanChunkDatabase()
 	return this->scanResult;
 }
 
-int DiskScanner::scanChunk(SIG_ARR *sigArray, Response *returnStruct)
-{/*
-	// Temporary pointer to the signature structure.
-	SIG_ARR *sigPtr = sigArray;
-	int uCharSize = sizeof(unsigned char);
-
-	// Reserve space for chunk data.
-	unsigned char *chunkData = new unsigned char[this->sectorSize*uCharSize];
-	unsigned char *chunkPtr;
-	DWORD bytesRead = 0;
-
-	// Store the headers and footers.
-	unsigned char *headerSet = new unsigned char[sigPtr->maxSignatureSize*this->chunkSize];
-	unsigned char *footerSet = new unsigned char[sigPtr->maxSignatureSize*this->chunkSize];
-
-	unsigned char *headerSetPtr = headerSet;
-	unsigned char *footerSetPtr = footerSet;
-	
-	// Scan the chunks into memory; (i == sector number).
-	for (unsigned int i = 0; i < this->chunkSize; i++)
-	{
-		// Read in the sector.
-		if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize, &bytesRead, NULL)))
-			return -1;
-
-		// Get a pointer to the start of the data.
-		chunkPtr = chunkData;
-
-		// Add the headers into a temporary buffer.
-		memcpy(headerSetPtr, chunkPtr, uCharSize*sigPtr->maxSignatureSize);
-		headerSetPtr += sigPtr->maxSignatureSize*uCharSize;
-
-		// Add the footers into a temporary buffer.
-		chunkPtr += (this->sectorSize*uCharSize) - (sigPtr->maxSignatureSize*uCharSize);
-		memcpy(footerSetPtr, chunkPtr, uCharSize*sigPtr->maxSignatureSize);
-		footerSetPtr += sigPtr->maxSignatureSize*uCharSize;
-	}
-	
-	// Reset the chunk pointer to the start of the data.
-	chunkPtr = chunkData;
-
-	// Create the response struct.
-	Response *responsePtr = new Response;
-	
-	// Initialise the struct with signature IDs.
-	for (unsigned int i = 0; i < sigPtr->numSigPairs; i++)
-	{
-		responsePtr->scanResultsArr[i] = new ScanResult;
-		responsePtr->scanResultsArr[i]->sigID = sigPtr->sigArray[i]->sigID;
-		responsePtr->scanResultsArr[i]->footerCount = 0;
-		responsePtr->scanResultsArr[i]->headerCount = 0;
-	}
-	
-	// Reset the scanning pointers.
-	headerSetPtr = headerSet;
-	footerSetPtr = footerSet;
-
-	// Check each signature in the signature database with each signature found in the scanning.
-	for (unsigned int i = 0; i < sigPtr->numSigPairs; i++)
-	{
-		for (unsigned int j = 0; j < this->chunkSize; j++)
-		{
-			// Check to see if the header is valid and compare.
-			if (sigPtr->sigArray[i]->sigHeader != NULL)
-			{
-				#ifdef DEBUG_MODE
-				printCompareSig(headerSetPtr, sigPtr->sigArray[i]->sigHeader, sigPtr->maxSignatureSize*uCharSize);
-				#endif
-
-				// Compare the current signature with the valid header.
-				if (compareSig(headerSetPtr, sigPtr->sigArray[i]->sigHeader, sigPtr->maxSignatureSize*uCharSize) == 0)
-				{
-					#ifdef DEBUG_MODE
-					printf("match\n");
-					#endif
-
-					// The signatures are equal, get the ID and incrememt the resultSet.
-					unsigned int thisID = sigPtr->sigArray[i]->sigID;
-
-					// Increment the header result set.
-					responsePtr->scanResultsArr[i]->headerCount++;
-				}
-				#ifdef DEBUG_MODE
-				else
-					printf("no match\n");
-				#endif
-			}
-
-			if (sigPtr->sigArray[i]->sigFooter != NULL)
-			{
-				#ifdef DEBUG_MODE
-				printCompareSig(footerSetPtr, sigPtr->sigArray[i]->sigFooter, sigPtr->maxSignatureSize*uCharSize);
-				#endif
-
-				// Compare the current signature with the valid footer.
-				if (compareSig(footerSetPtr, sigPtr->sigArray[i]->sigFooter, sigArray->maxSignatureSize*uCharSize) == 0)
-				{
-					// The signatures are equal, get the ID and incrememt the resultSet.
-					unsigned int thisID = sigPtr->sigArray[i]->sigID;
-
-					// Increment the footer result set.
-					responsePtr->scanResultsArr[i]->footerCount++;
-				}
-				#ifdef DEBUG_MODE
-				else
-					printf("no match\n");
-				#endif
-			}
-
-			// Increment the header and footer scanning sets.
-			headerSetPtr += sigPtr->maxSignatureSize*uCharSize;
-			footerSetPtr += sigPtr->maxSignatureSize*uCharSize;
-		}
-	}
-
-	// Free memory and return results.
-	delete[] chunkData;
-	delete[] headerSet;
-	delete[] footerSet;
-	
-	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
-	*/
-	return 0;
-}
-
-int DiskScanner::scanChunkBST(SIG_ARR *sigArray, Response *returnStruct)
-{/*
-	// Temporary pointer to the signature structure.
-	SIG_ARR *sigPtr = sigArray;
-	int uCharSize = sizeof(unsigned char);
-
-	// Reserve space for chunk data.
-	unsigned char *chunkData = new unsigned char[this->sectorSize*uCharSize];
-	unsigned char *chunkPtr;
-	DWORD bytesRead = 0;
-
-	// Store the headers and footers.
-	unsigned char *headerSet = new unsigned char[sigPtr->maxSignatureSize*this->chunkSize];
-	unsigned char *footerSet = new unsigned char[sigPtr->maxSignatureSize*this->chunkSize];
-
-	unsigned char *headerSetPtr = headerSet;
-	unsigned char *footerSetPtr = footerSet;
-
-	// Scan the chunks into memory; (i == sector number).
-	for (unsigned int i = 0; i < this->chunkSize; i++)
-	{
-		// Read in the sector.
-		if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize, &bytesRead, NULL)))
-			return -1;
-
-		// Get a pointer to the start of the data.
-		chunkPtr = chunkData;
-
-		// Add the headers into a temporary buffer.
-		memcpy(headerSetPtr, chunkPtr, uCharSize*sigPtr->maxSignatureSize);
-		headerSetPtr += sigPtr->maxSignatureSize*uCharSize;
-
-		// Add the footers into a temporary buffer.
-		chunkPtr += (this->sectorSize*uCharSize) - (sigPtr->maxSignatureSize*uCharSize);
-		memcpy(footerSetPtr, chunkPtr, uCharSize*sigPtr->maxSignatureSize);
-		footerSetPtr += sigPtr->maxSignatureSize*uCharSize;
-	}
-
-	// Reset the chunk pointer to the start of the data.
-	chunkPtr = chunkData;
-
-	// Create the response struct.
-	Response *responsePtr = new Response;
-
-	// Initialise the struct with signature IDs.
-	for (unsigned int i = 0; i < sigPtr->numSigPairs; i++)
-	{
-		responsePtr->scanResultsArr[i] = new ScanResult;
-		responsePtr->scanResultsArr[i]->sigID = sigPtr->sigArray[i]->sigID;
-		responsePtr->scanResultsArr[i]->footerCount = 0;
-		responsePtr->scanResultsArr[i]->headerCount = 0;
-	}
-
-	// Reset the scanning pointers.
-	headerSetPtr = headerSet;
-	footerSetPtr = footerSet;
-
-	// Check each signature in the signature database with each signature found in the scanning.
-	for (unsigned int i = 0; i < sigPtr->numSigPairs; i++)
-	{
-		if (binarySearch(chunkPtr, sigPtr->sigArray[i]->sigHeader, 0, this->chunkSize, sigPtr->maxSignatureSize) == 0)
-			responsePtr->scanResultsArr[i]->headerCount++;
-	}
-
-	// Free memory and return results.
-	delete[] chunkData;
-	delete[] headerSet;
-	delete[] footerSet;
-
-	memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
-	*/
-	return 0;
-}
-
-ScanResult *DiskScanner::scanChunkList(SIG_ARR *sigArray)
-{/*
-	// Temporary pointer to the signature structure.
-	SIG_ARR *sigPtr = sigArray;
-
-	unsigned int maxSize = sigPtr->maxSignatureSize;
-	unsigned int numPairs = sigPtr->numSigPairs;
-
-	return NULL;
-
-	printf("Max Size: %u\n NumPairs: %u", maxSize, numPairs);
-
-	if ((numPairs <= 0) || maxSize <= 0)
+unsigned int *DiskScanner::scanChunk_BST()
+{
+	if (this->numSigs < 1)
 		return NULL;
 
+	#ifdef DEBUG_MODE
+	printf(">> Beginning Scan:\n");
+	#endif
+
+	int uCharSize = sizeof(unsigned char);
+
+	// Reserve space for chunk data.
+	unsigned char *chunkData = new unsigned char[this->sectorSize*uCharSize*this->chunkSize];
+	unsigned char *chunkPtr;
+	DWORD bytesRead = 0;
+
+	// Reserve space for header data.
+	unsigned char *headerSet = new unsigned char[this->maxSize*this->chunkSize];
+	unsigned char *headerSetPtr = headerSet;
+
+	unsigned int numDiskSigs = 0;
+
+	// Read in the sector.
+	if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize*this->chunkSize, &bytesRead, NULL)))
+		return NULL;
+
+	// Get a pointer to the start of the data.
+	chunkPtr = chunkData;
+	headerSetPtr = headerSet;
+
+	for (unsigned int i = 0; i < this->chunkSize; i++)
+	{
+		memcpy(headerSetPtr, chunkPtr, uCharSize*this->maxSize);
+		headerSetPtr += maxSize*uCharSize;
+		chunkPtr += this->sectorSize;
+	}
+
+	// TODO: CHECK TO SEE IF ALL VALUES ARE 0, IF SO RETURN.
+	// Reset the chunk pointer to the start of the data.
+	headerSetPtr = headerSet;
+	
+	// Check each signature in the signature database with each signature found in the scanning.
+	for (unsigned int i = 0; i < this->numSigs; i++)
+	{
+		#ifdef DEBUG_MODE
+		printf(">> Finding signature: ");
+		for (unsigned int i = 0; i < this->maxSize; i++)
+			printf("%X", headerSetPtr[i]);
+		#endif
+		
+		// Recursively binary search through the header database vector for the current chunkPtr.
+		if (binarySearch(headerSetPtr, 0, this->numSigs, this->maxSize) == 0)
+		{
+			#ifdef DEBUG_MODE
+			printf(" ...match\n");
+			#endif
+
+			// The signatures are equal, get the ID and incrememt the resultSet.
+			this->scanResult[i]++;
+		}
+		else
+		{
+			#ifdef DEBUG_MODE
+			printf(" ...no match\n");
+			#endif
+		}
+		
+		headerSetPtr += maxSize*uCharSize;
+	}
+
+	// Free memory and return results.
+	delete[] chunkData;
+	delete[] headerSet;
+	
+	#ifdef DEBUG_MODE
+	
+	printf(">> Scan Results\n");
+	for (int i = 0; i < this->sigDataList.size(); i++)
+	{
+		printf(">> Signature ID:%u\t Headers Found: %u\n", i, scanResult[i]);
+	}
+	
+	printf(">> Scanning complete.\n");
+	#endif
+
+	return this->scanResult;
+}
+
+unsigned int *DiskScanner::scanChunkBySector()
+{
+	if (this->numSigs < 1)
+		return NULL;
+
+	#ifdef DEBUG_MODE
+	printf(">> Beginning Scan:\n");
+	#endif
+
 	int uCharSize = sizeof(unsigned char);
 
 	// Reserve space for chunk data.
@@ -531,16 +419,7 @@ ScanResult *DiskScanner::scanChunkList(SIG_ARR *sigArray)
 	unsigned char *chunkPtr;
 	DWORD bytesRead = 0;
 
-	// Store the headers and footers.
-	unsigned char *headerSet = new unsigned char[maxSize*this->chunkSize];
-	unsigned char *footerSet = new unsigned char[sigPtr->maxSignatureSize*this->chunkSize];
-
-	unsigned char *headerSetPtr = headerSet;
-	unsigned char *footerSetPtr = footerSet;
-
-	#ifdef DEBUG_MODE
-	printf("Reading chunk...\n");
-	#endif
+	unsigned int numDiskSigs = 0;
 
 	// Scan the chunks into memory; (i == sector number).
 	for (unsigned int i = 0; i < this->chunkSize; i++)
@@ -552,184 +431,113 @@ ScanResult *DiskScanner::scanChunkList(SIG_ARR *sigArray)
 		// Get a pointer to the start of the data.
 		chunkPtr = chunkData;
 
-		// Add the headers into a temporary buffer.
-		memcpy(headerSetPtr, chunkPtr, uCharSize*maxSize);
-		headerSetPtr += maxSize*uCharSize;
-
-		// Add the footers into a temporary buffer.
-		chunkPtr += (this->sectorSize*uCharSize) - (maxSize*uCharSize);
-		memcpy(footerSetPtr, chunkPtr, uCharSize*maxSize);
-		footerSetPtr += maxSize*uCharSize;
-	}
-
-	#ifdef DEBUG_MODE
-	printf("Signatures read in from HD, building return list.\n");
-	#endif
-
-	// Reset the chunk pointer to the start of the data.
-	chunkPtr = chunkData;
-
-	// Create the response struct.
-	Response *responsePtr = new Response;
-
-	responsePtr->scanResults = new ScanResult;
-	ScanResult *scanResultPtr = responsePtr->scanResults;
-	SIG_DATA *sigDataPtr = this->sigDataList[0];
-
-	scanResultPtr->sigID = sigDataPtr->sigID;
-	scanResultPtr->headerCount = 0;
-
-	// Initialise the struct with signature IDs.
-	for (unsigned int i = 1; i < numPairs; i++)
-	{
-		scanResultPtr->next = new ScanResult;
-		sigDataPtr = sigDataPtr->next;
-
-		scanResultPtr->sigID = sigDataPtr->sigID;
-		scanResultPtr->footerCount = 0;
-		scanResultPtr->headerCount = 0;
-	}
-
-	// Reset the scanning pointers.
-	headerSetPtr = headerSet;
-	footerSetPtr = footerSet;
-
-	sigDataPtr = sigPtr->sigArray;
-	scanResultPtr = responsePtr->scanResults;
-
-	#ifdef DEBUG_MODE
-	printf("Preparing to search for signature matches...\n");
-	#endif
-
-	// Check each signature in the signature database with each signature found in the scanning.
-	for (unsigned int i = 0; i < numPairs; i++)
-	{
-		for (unsigned int j = 0; j < this->chunkSize; j++)
+		for (unsigned int i = 0; i < this->numSigs; i++)
 		{
-			// Check to see if the header is valid and compare.
-			if (sigDataPtr->sigHeader != NULL)
+			#ifdef DEBUG_MODE
+			printCompareSig(chunkPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize);
+			#endif
+
+			// Compare the current signature with the valid header.
+			if (compareSig(chunkPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize) == 0)
 			{
 				#ifdef DEBUG_MODE
-				printCompareSig(headerSetPtr, sigDataPtr->sigHeader, maxSize*uCharSize);
+				printf("match\n");
 				#endif
 
-				// Compare the current signature with the valid header.
-				if (compareSig(headerSetPtr, sigDataPtr->sigHeader, maxSize*uCharSize) == 0)
-				{
-					#ifdef DEBUG_MODE
-					printf("match\n");
-					#endif
-
-					// The signatures are equal, get the ID and incrememt the resultSet.
-					unsigned int thisID = sigDataPtr->sigID;
-
-					// Increment the header result set.
-					scanResultPtr->headerCount++;
-				}
+				// The signatures are equal, get the ID and incrememt the resultSet.
+				this->scanResult[i]++;
+			}
+			else
+			{
 				#ifdef DEBUG_MODE
-				else
-					printf("no match\n");
+				printf("no match\n");
 				#endif
 			}
-
-			// Increment the header and footer scanning sets.
-			headerSetPtr += maxSize*uCharSize;
-			footerSetPtr += maxSize*uCharSize;
 		}
-
-		//sigDataPtr = sigDataPtr->next;
-		scanResultPtr = scanResultPtr->next;
-		headerSetPtr = headerSet;
-		footerSetPtr = footerSet;
-
 	}
 
 	// Free memory and return results.
 	delete[] chunkData;
-	delete[] headerSet;
-	delete[] footerSet;
-
-	//memcpy(returnStruct, responsePtr, sizeof(*responsePtr));
 
 	#ifdef DEBUG_MODE
-	printf("Chunk scan complete. Returning.\n");
-	#endif
-	
-	return responsePtr->scanResults;
 
-	*/
-	return NULL;
-}
-
-
-void DiskScanner::readAttributes(SIG_ARR *sigArray)
-{/*
-	//printf("maxSignatureSize: %d\nnumSigPairs: %d\nsigID: %d\n", sigArray->maxSignatureSize, sigArray->numSigPairs, sigArray->sigArray[0]->sigHeader);
-
-	printf("Received string 1:%c%c%c%c%c%c\n", sigArray->sigArray->sigHeader[0], 
-		sigArray->sigArray->sigHeader[1], 
-		sigArray->sigArray->sigHeader[2], 
-		sigArray->sigArray->sigHeader[3],
-		sigArray->sigArray->sigHeader[4],
-		sigArray->sigArray->sigHeader[5]);
-
-	printf("Received string 2:%c%c%c%c%c%c\n", sigArray->sigArray->sigHeader[0],
-		sigArray->sigArray->sigHeader[1],
-		sigArray->sigArray->sigHeader[2],
-		sigArray->sigArray->sigHeader[3],
-		sigArray->sigArray->sigHeader[4],
-		sigArray->sigArray->sigHeader[5]);
-	*/	
-}
-
-int DiskScanner::scanChunkTest(SIG_ARR *sigArray)
-{/*
-	// Set the sector size.
-	DWORD junkData;
-	DISK_GEOMETRY pdg;
-	DeviceIoControl(this->diskHandle, IOCTL_DISK_GET_DRIVE_GEOMETRY, NULL, 0, &pdg, sizeof(pdg), &junkData, NULL);
-	this->sectorSize = pdg.BytesPerSector;
-	int numMatches = 0;
-
-	int signatureSize = 3;
-	unsigned char *testSignature = new unsigned char[3];
-	testSignature[0] = 0xFF;
-	testSignature[1] = 0xD8;
-	testSignature[2] = 0xFF;
-
-	unsigned char *chunkData = new unsigned char[this->sectorSize];
-	DWORD bytesRead;
-
-	// Scan the chunks into memory; (i == sector number).
-	for (unsigned int sectorNum = 0; sectorNum < this->chunkSize; sectorNum++)
+	printf(">> Scan Results\n");
+	for (int i = 0; i < this->sigDataList.size(); i++)
 	{
-		// Read in a header.
-		if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize, &bytesRead, NULL)))
-			return -1;
-
-		unsigned char *currentSig = new unsigned char[signatureSize*sizeof(unsigned char)];
-		currentSig[0] = chunkData[0];
-		currentSig[1] = chunkData[1];
-		currentSig[2] = chunkData[2];
-
-		#ifdef DEBUG_MODE
-		printf("[Sector %d] Signature: %X%X%X | Header: %X%X%X\n", sectorNum, testSignature[0], testSignature[1], testSignature[2], chunkData[0], chunkData[1], chunkData[2]);
-		#endif
-
-		if (compareSig(currentSig, testSignature, signatureSize) == 0)
-		{
-			printf("... found match\n");
-			numMatches++;
-		}
-		else
-			printf("... no match\n");
-
-		delete currentSig;
+		printf(">> Signature ID:%u\t Headers Found: %u\n", i, scanResult[i]);
 	}
 
-	printf("Found %d matches\n.", numMatches);
+	printf(">> Scanning complete.\n");
+	#endif
 
-	delete chunkData;
-	delete testSignature; */
-	return 0;
+	return this->scanResult;
+}
+
+unsigned int *DiskScanner::scanChunkBySector_BST()
+{
+	if (this->numSigs < 1)
+		return NULL;
+
+	#ifdef DEBUG_MODE
+	printf(">> Beginning Scan:\n");
+	#endif
+
+	int uCharSize = sizeof(unsigned char);
+
+	// Reserve space for chunk data.
+	unsigned char *chunkData = new unsigned char[this->sectorSize*uCharSize];
+	unsigned char *chunkPtr;
+	DWORD bytesRead = 0;
+
+	unsigned int numDiskSigs = 0;
+
+	// Scan the chunks into memory; (i == sector number).
+	for (unsigned int i = 0; i < this->chunkSize; i++)
+	{
+		// Read in the sector.
+		if (FAILED(ReadFile(this->diskHandle, chunkData, this->sectorSize, &bytesRead, NULL)))
+			return NULL;
+
+		// Get a pointer to the start of the data.
+		chunkPtr = chunkData;
+
+		#ifdef DEBUG_MODE
+		printf(">> Finding signature: ");
+		for (unsigned int i = 0; i < this->maxSize; i++)
+			printf("%X", chunkPtr[i]);
+		#endif
+
+		// Recursively binary search through the header database vector for the current chunkPtr.
+		if (binarySearch(chunkPtr, 0, this->numSigs, this->maxSize) == 0)
+		{
+			#ifdef DEBUG_MODE
+			printf("... match\n");
+			#endif
+
+			// The signatures are equal, get the ID and increment the resultSet.
+			this->scanResult[i]++;
+		}
+		else
+		{
+			#ifdef DEBUG_MODE
+			printf("... no match\n");
+			#endif
+		}
+	}
+
+	// Free memory and return results.
+	delete[] chunkData;
+
+	#ifdef DEBUG_MODE
+
+	printf(">> Scan Results\n");
+	for (int i = 0; i < this->sigDataList.size(); i++)
+	{
+		printf(">> Signature ID:%u\t Headers Found: %u\n", i, scanResult[i]);
+	}
+
+	printf(">> Scanning complete.\n");
+	#endif
+
+	return this->scanResult;
 }
