@@ -61,8 +61,9 @@ namespace DECA_Interaction_Spike
                 Model.SignatureLibrary.Signatures SignatureLibrary = (Model.SignatureLibrary.Signatures)serializer.Deserialize(libraryReader);
                 libraryReader.Close();
 
+                //Get the maximum signature size
                 int currentMaxSignatureSize = 0;
-                for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
+                for (int i = 0; i <= 1; i++)
                 {
                     if (SignatureLibrary.Signature[i].HeaderSignature.Length > currentMaxSignatureSize)
                     {
@@ -80,7 +81,8 @@ namespace DECA_Interaction_Spike
                 //Mount volume
                 if (mountVolume(DriveScanner) == 0)
                 {
-                    for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
+                    //Add the signatures into the signature library on the dll
+                    for (int i = 0; i <= 1; i++)
                     {
                         Model.ScanRequest.SignatureData signature = new Model.ScanRequest.SignatureData();
                         signature.sigId = (UInt32)i;
@@ -90,7 +92,9 @@ namespace DECA_Interaction_Spike
 
                     lockSignatureList(DriveScanner);
 
+                    int[] resultArray = new int[2];
                     IntPtr result = scanChunkDatabase(DriveScanner);
+                    Marshal.Copy(result, resultArray, 0, 2);
 
                     unmountVolume();
 
