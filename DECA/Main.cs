@@ -30,6 +30,7 @@ namespace DECA
         {
             driveSelectionBox.Items.AddRange(allDrives);
 
+            //Load the signature library
             DriveScanner = new DriveScanner();
             DriveScanner.LoadSignatureLibrary(Application.StartupPath + "\\signatures.xml");
         }

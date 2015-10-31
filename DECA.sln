@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DECA Initial Library Parser", "DECA Initial Library Parser\DECA Initial Library Parser.csproj", "{A08C23C2-A6A6-43D0-A168-1F315C30F4F3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DECA Interaction Spike", "DECA Interaction Spike\DECA Interaction Spike.csproj", "{5F2C9A50-5A45-4701-A3BC-6DED5DFC2762}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DECA Interaction Spike (DEPRECATED)", "DECA Interaction Spike\DECA Interaction Spike (DEPRECATED).csproj", "{5F2C9A50-5A45-4701-A3BC-6DED5DFC2762}"
 	ProjectSection(ProjectDependencies) = postProject
 		{B13DC5C9-E807-4357-8136-052F0F068480} = {B13DC5C9-E807-4357-8136-052F0F068480}
 	EndProjectSection
