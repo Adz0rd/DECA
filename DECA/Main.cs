@@ -61,8 +61,6 @@ namespace DECA
                     // Start the asynchronous operation.
                     scanSectorBackgroundWorker.RunWorkerAsync(analysisProgressBar.Value);
                 }
-                
-                DriveScanner.Dispose();
             }
 
         }
@@ -92,6 +90,9 @@ namespace DECA
             //Re-enable user controls
             analysisBeginButton.Enabled = true;
             driveSelectionBox.Enabled = true;
+
+            //Dispose of finished drive scanner
+            DriveScanner.Dispose();
         }
 
         private void scanSectorBackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
