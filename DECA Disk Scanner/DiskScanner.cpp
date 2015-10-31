@@ -1,5 +1,5 @@
 #include "DiskScanner.h"
-
+#include <string>
 IDiskScanner::~IDiskScanner() {}
 
 DiskScanner::~DiskScanner()
@@ -13,8 +13,8 @@ DiskScanner::~DiskScanner()
 
 inline int DiskScanner::compareSig(unsigned char *sig1, unsigned char *sig2, unsigned int size)
 {
-	unsigned char sig1Val = 0;
-	unsigned char sig2Val = 0;
+	unsigned int sig1Val = 0;
+	unsigned int sig2Val = 0;
 	
 	for (unsigned int i = 0; i < size; i++)
 	{
@@ -192,11 +192,12 @@ void DiskScanner::addSignature(unsigned int sigID, unsigned int sigLength, unsig
 	SIG_DATA dataPoint;
 	dataPoint.sigID = sigID;
 	dataPoint.sigHeader = new unsigned char[sigLength];
+	dataPoint.sigLength = sigLength;
 
 	// Save the signature data.
 	for (unsigned int i = 0; i < sigLength; i++)
 		dataPoint.sigHeader[i] = sigHeader[i];
-	
+
 	#ifdef DEBUG_MODE
 	printf("... Complete\n");
 	#endif
