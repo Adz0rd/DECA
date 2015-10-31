@@ -41,33 +41,19 @@ void DiskScanner::printCompareSig(unsigned char *sig1, unsigned char *sig2, int 
 
 int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
 {
-	char *chSig1 = new char[sigSize + 1];
-	char *chSig2 = new char[sigSize + 1];
-
-	long sig1Val = 0;
-	long sig2Val = 0;
-
+	// Compare hex strings.
 	for (int i = 0; i < sigSize; i++)
 	{
-		chSig1[i] = sig1[i];
-		chSig2[i] = sig2[i];
+		if (sig1[i] > sig2[i]) {
+			return 1;
+		}
+
+		else if (sig1[i] < sig2[i]) {
+			return -1;
+		}
 	}
 
-	chSig1[sigSize] = '\0';
-	chSig2[sigSize] = '\0';
-
-	sig1Val = strtol(chSig1, NULL, 16);
-	sig2Val = strtol(chSig2, NULL, 16);
-
-	delete[] chSig1;
-	delete[] chSig2;
-
-	if (sig1Val > sig2Val)
-		return 1;
-	else if (sig1Val < sig2Val)
-		return -1;
-	else
-		return 0;
+	return 0;
 }
 
 int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
@@ -98,7 +84,10 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 	}
 	// Key has been found.
 	else
+	{
+		this->scanResult[mid]++;
 		return 0;
+	}
 
 	return -1;
 }
@@ -171,7 +160,7 @@ int DiskScanner::unmountVolume()
 	#ifdef DEBUG_MODE
 	printf(">> Preparing to unmount volume.\n");
 	#endif
-
+	
 	// Check to see if the handle is open, then close it.
 	if (this->diskHandle != INVALID_HANDLE_VALUE)
 	{
@@ -188,7 +177,7 @@ int DiskScanner::unmountVolume()
 	#ifdef DEBUG_MODE
 	printf(">> Unable to unmount volume.\n");
 	#endif
-
+	
 	return -1;
 }
 
@@ -357,7 +346,7 @@ unsigned int *DiskScanner::scanChunk_BST()
 	headerSetPtr = headerSet;
 	
 	// Check each signature in the signature database with each signature found in the scanning.
-	for (unsigned int i = 0; i < this->numSigs; i++)
+	for (unsigned int i = 0; i < this->chunkSize; i++)
 	{
 		#ifdef DEBUG_MODE
 		printf(">> Finding signature: ");
@@ -371,9 +360,6 @@ unsigned int *DiskScanner::scanChunk_BST()
 			#ifdef DEBUG_MODE
 			printf(" ...match\n");
 			#endif
-
-			// The signatures are equal, get the ID and incrememt the resultSet.
-			this->scanResult[i]++;
 		}
 		else
 		{
@@ -431,21 +417,21 @@ unsigned int *DiskScanner::scanChunkBySector()
 		// Get a pointer to the start of the data.
 		chunkPtr = chunkData;
 
-		for (unsigned int i = 0; i < this->numSigs; i++)
+		for (unsigned int j = 0; j < this->numSigs; j++)
 		{
 			#ifdef DEBUG_MODE
-			printCompareSig(chunkPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize);
+			printCompareSig(chunkPtr, this->sigDataList[j].sigHeader, maxSize*uCharSize);
 			#endif
 
 			// Compare the current signature with the valid header.
-			if (compareSig(chunkPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize) == 0)
+			if (compareSig(chunkPtr, this->sigDataList[j].sigHeader, maxSize*uCharSize) == 0)
 			{
 				#ifdef DEBUG_MODE
 				printf("match\n");
 				#endif
 
 				// The signatures are equal, get the ID and incrememt the resultSet.
-				this->scanResult[i]++;
+				this->scanResult[j]++;
 			}
 			else
 			{
@@ -513,9 +499,6 @@ unsigned int *DiskScanner::scanChunkBySector_BST()
 			#ifdef DEBUG_MODE
 			printf("... match\n");
 			#endif
-
-			// The signatures are equal, get the ID and increment the resultSet.
-			this->scanResult[i]++;
 		}
 		else
 		{
@@ -540,4 +523,13 @@ unsigned int *DiskScanner::scanChunkBySector_BST()
 	#endif
 
 	return this->scanResult;
+}
+
+int DiskScanner::moveOffset(long offset)
+{
+	// Skip to a new disk offset.
+	if(FAILED(SetFilePointer(this->diskHandle, offset, NULL, FILE_CURRENT)))
+		return -1;
+
+	return 0;
 }
