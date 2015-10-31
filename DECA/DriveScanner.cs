@@ -126,7 +126,8 @@ namespace DECA
                     //Add the list of signature into the signature library located within the dll
                     for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
                     {
-                        addSignature(DriveScannerPointer, (UInt32)i, (UInt32)SignatureLibrary.Signature.ToArray()[i].HeaderSignature.Length, ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].HeaderSignature));
+                        string HeaderAsHex = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].HeaderSignature);
+                        addSignature(DriveScannerPointer, (UInt32)i, (UInt32)HeaderAsHex.Length, HeaderAsHex);
                     }
                 }
                 catch (Exception e)
