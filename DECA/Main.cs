@@ -121,7 +121,7 @@ namespace DECA
         {
             //Get the scan results for all sectors
             int[][] resultArrays = new int[10000][];
-            for (int i = 0; i <= 10000; i++)
+            for (int i = 0; i < 10000; i++)
             {
                 resultArrays[i] = DriveScanner.ScanSector();
                 worker.ReportProgress(currentProgressBarValue++);

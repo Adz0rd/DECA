@@ -83,7 +83,7 @@ private:
 	unsigned int *scanResult;				// Return array.
 
 	// Methods for internal printing and comparison.
-	int compareSig(unsigned char *sig1, unsigned char *sig2, int size);				// Signature comparison.
+	int compareSig(unsigned char *sig1, unsigned char *sig2, unsigned int size);	// Signature comparison.
 	void printCompareSig(unsigned char *sig1, unsigned char *sig2, int size);		// Signature comparison with output.
 	int binarySearch(unsigned char *sig, int min, int max, int sigSize);			// Recursive binary seach.
 	int hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize);			// Compare hex values.

@@ -11,15 +11,16 @@ DiskScanner::~DiskScanner()
 	delete diskPath;
 }
 
-inline int DiskScanner::compareSig(unsigned char *sig1, unsigned char *sig2, int size)
+inline int DiskScanner::compareSig(unsigned char *sig1, unsigned char *sig2, unsigned int size)
 {
 	unsigned char sig1Val = 0;
 	unsigned char sig2Val = 0;
-
-	for (int i = 0; i < size; i++)
+	
+	for (unsigned int i = 0; i < size; i++)
 	{
 		sig1Val = sig1[i];
 		sig2Val = sig2[i];
+
 		if (sig1Val != sig2Val)
 			return -1;
 	}
