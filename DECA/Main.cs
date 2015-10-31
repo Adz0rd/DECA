@@ -32,7 +32,24 @@ namespace DECA
 
             //Load the signature library
             DriveScanner = new DriveScanner();
-            DriveScanner.LoadSignatureLibrary(Application.StartupPath + "\\signatures.xml");
+            int loadResult = DriveScanner.LoadSignatureLibrary(Application.StartupPath + "\\signatures.xml");
+
+            if(loadResult != 0)
+            {
+                switch (loadResult)
+                {
+                    case 1:
+                        MessageBox.Show("Signature library file not found. Application will now quit.");
+                        break;
+                    case 2:
+                        MessageBox.Show("Invalid signature library file detected. Application will now quit.");
+                        break;
+                    case 3:
+                        MessageBox.Show("Error while processing the signature library. Application will now quit.");
+                        break;
+                }
+                Application.Exit();
+            }
         }
 
         private void analysisBeginButton_Click(object sender, EventArgs e)
