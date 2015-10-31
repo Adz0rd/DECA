@@ -70,7 +70,7 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 	sigDataIterator += mid;
 
 	// Check to see if the middle signature is greater/less than the key sig.
-	int res = hexCheck(sigDataIterator._Ptr->sigHeader, sig, sigSize);
+	int res = hexCheck(sigDataIterator._Ptr->sigHeader, sig, sigDataIterator._Ptr->sigLength);
 
 	// Middle sig is greater.
 	if (res == 1)
@@ -181,20 +181,20 @@ int DiskScanner::unmountVolume()
 	return -1;
 }
 
-void DiskScanner::addSignature(SIG_DATA *sigData)
+void DiskScanner::addSignature(unsigned int sigID, unsigned int sigLength, unsigned char *sigHeader)
 {
 	#ifdef DEBUG_MODE
-	printf(">> Adding Signature: %u", sigData->sigID);
+	printf(">> Adding Signature: %u", sigID);
 	#endif
 
 	// Add a new signature from the sigData to the vector database.
 	SIG_DATA dataPoint;
-	dataPoint.sigID = sigData->sigID;
-	dataPoint.sigHeader = new unsigned char[maxSize];
+	dataPoint.sigID = sigID;
+	dataPoint.sigHeader = new unsigned char[sigLength];
 
 	// Save the signature data.
 	for (unsigned int i = 0; i < maxSize; i++)
-		dataPoint.sigHeader[i] = sigData->sigHeader[i];
+		dataPoint.sigHeader[i] = sigHeader[i];
 	
 	#ifdef DEBUG_MODE
 	printf("... Complete\n");
@@ -261,11 +261,11 @@ unsigned int *DiskScanner::scanChunk()
 		for (unsigned int j = 0; j < this->numSigs; j++)
 		{
 			#ifdef DEBUG_MODE
-			printCompareSig(headerSetPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize);
+			printCompareSig(headerSetPtr, this->sigDataList[i].sigHeader, this->sigDataList[i].sigLength*uCharSize);
 			#endif
 
 			// Compare the current signature with the valid header.
-			if (compareSig(headerSetPtr, this->sigDataList[i].sigHeader, maxSize*uCharSize) == 0)
+			if (compareSig(headerSetPtr, this->sigDataList[i].sigHeader, this->sigDataList[i].sigLength*uCharSize) == 0)
 			{
 				#ifdef DEBUG_MODE
 				printf("match\n");
@@ -420,11 +420,11 @@ unsigned int *DiskScanner::scanChunkBySector()
 		for (unsigned int j = 0; j < this->numSigs; j++)
 		{
 			#ifdef DEBUG_MODE
-			printCompareSig(chunkPtr, this->sigDataList[j].sigHeader, maxSize*uCharSize);
+			printCompareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize);
 			#endif
 
 			// Compare the current signature with the valid header.
-			if (compareSig(chunkPtr, this->sigDataList[j].sigHeader, maxSize*uCharSize) == 0)
+			if (compareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize) == 0)
 			{
 				#ifdef DEBUG_MODE
 				printf("match\n");

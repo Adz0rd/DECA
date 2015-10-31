@@ -20,6 +20,7 @@ extern "C"
 	struct SIG_DATA
 	{
 		unsigned int sigID;
+		unsigned int sigLength;
 		unsigned char *sigHeader;
 	};
 }
@@ -35,7 +36,7 @@ public:
 	virtual int unmountVolume() = 0;
 
 	// Signature loading methods.
-	virtual void addSignature(SIG_DATA *sigData) = 0;
+	virtual void addSignature(unsigned int sigID, unsigned int sigLength, unsigned char *sigHeader) = 0;
 	virtual void lockSignatureList() = 0;
 
 	// Scanning methods.
@@ -60,8 +61,8 @@ public:
 	int unmountVolume();
 
 	// Signature initilisation methods.
-	void addSignature(SIG_DATA *sigData);		// Add a signature to the database.
-	void lockSignatureList();					// Lock signatures in for scanning.
+	void addSignature(unsigned int sigID, unsigned int sigLength, unsigned char *sigHeader);	// Add a signature to the database.
+	void lockSignatureList();																	// Lock signatures in for scanning.
 
 	// Signature scanning methods.
 	unsigned int *scanChunk();						// Scan a chunk one sector at a time and then compare all sectors/signatures.
@@ -113,9 +114,9 @@ extern "C"
 	}
 
 	// Scan the first/next available chunk.
-	DISKSCANNER_API void addSignature(IDiskScanner *diskScanner, SIG_DATA *sigData)
+	DISKSCANNER_API void addSignature(IDiskScanner *diskScanner, unsigned int sigID, unsigned int sigLength, unsigned char *sigHeader)
 	{
-		diskScanner->addSignature(sigData);
+		diskScanner->addSignature(sigID, sigLength, sigHeader);
 	}
 
 
