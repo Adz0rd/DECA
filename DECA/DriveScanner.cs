@@ -25,16 +25,13 @@ namespace DECA
         private static extern void addSignature(IntPtr driveScanner, UInt32 sigId, [MarshalAs(UnmanagedType.LPStr)] string sigHeader, UInt32 sigLength);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void lockSignatureList(IntPtr diskScanner);
+        private static extern void lockSignatureList(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr scanChunkBySector(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void unmountVolume();
-
-        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void disposeScanner(IntPtr driveScanner);
+        private static extern int unmountVolume(IntPtr driveScanner);
         #endregion
 
         #region Global variables
@@ -214,10 +211,7 @@ namespace DECA
             try
             {
                 //Unmount the volume
-                unmountVolume();
-
-                //Dispose of the Drive Scanner Instance
-                disposeScanner(DriveScannerPointer);
+                unmountVolume(DriveScannerPointer);
 
                 //Reset the pointer back to zero
                 DriveScannerPointer = IntPtr.Zero;
@@ -231,8 +225,6 @@ namespace DECA
 
             return 0;
         }
-
-
         #endregion
     }
 }
