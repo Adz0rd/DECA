@@ -43,6 +43,7 @@ public:
 	virtual unsigned int *scanChunk_BST() = 0;
 	virtual unsigned int *scanChunkBySector() = 0;
 	virtual unsigned int *scanChunkBySector_BST() = 0;
+	virtual int moveOffset(long offset) = 0;
 };
 
 class DiskScanner : public IDiskScanner
@@ -67,6 +68,7 @@ public:
 	unsigned int *scanChunk_BST();					// Scan a chunk one sector at a time and then compare utilising a Binary Search Tree algorithm.
 	unsigned int *scanChunkBySector();				// Scan a chunk and compare signatures sector by sector.
 	unsigned int *scanChunkBySector_BST();			// Scan a chunk and compare signatures sector by sector utilising a Binary Search Tree algorithm.
+	int moveOffset(long offset);					// Move the offset to a new location.
 
 private:
 	HANDLE diskHandle;						// Win32 handle to disk.
@@ -93,13 +95,6 @@ extern "C"
 	DISKSCANNER_API IDiskScanner *createScanner()
 	{
 		return new DiskScanner();
-	}
-
-	// Dispose the scanner (Must be called once client has finished using the object).
-	DISKSCANNER_API void disposeScanner(IDiskScanner *diskScanner)
-	{
-		delete diskScanner;
-
 	}
 
 	DISKSCANNER_API void buildScanner(IDiskScanner *diskScanner, unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize)
@@ -147,5 +142,10 @@ extern "C"
 	DISKSCANNER_API unsigned int *scanChunkBySector_BST(IDiskScanner *diskScanner)
 	{
 		return diskScanner->scanChunkBySector_BST();
+	}
+
+	DISKSCANNER_API int moveOffset(IDiskScanner *diskScanner, long offset)
+	{
+		return diskScanner->moveOffset(offset);
 	}
 }
