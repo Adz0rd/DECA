@@ -22,7 +22,7 @@ namespace DECA
         private static extern int mountVolume(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void addSignature(IntPtr driveScanner, Model.ScanRequest.SignatureData signature);
+        private static extern void addSignature(IntPtr driveScanner, UInt32 sigId, [MarshalAs(UnmanagedType.LPStr)] string sigHeader, UInt32 sigLength);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern void lockSignatureList(IntPtr diskScanner);
@@ -129,10 +129,7 @@ namespace DECA
                     //Add the list of signature into the signature library located within the dll
                     for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
                     {
-                        Model.ScanRequest.SignatureData signature = new Model.ScanRequest.SignatureData();
-                        signature.sigId = (UInt32)i;
-                        signature.sigHeader = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].HeaderSignature);
-                        addSignature(DriveScannerPointer, signature);
+                        addSignature(DriveScannerPointer, (UInt32)i, SignatureLibrary.Signature.ToArray()[i].HeaderSignature, (UInt32)SignatureLibrary.Signature.ToArray()[i].HeaderSignature.Length);
                     }
                 }
                 catch (Exception e)
@@ -221,6 +218,9 @@ namespace DECA
 
                 //Dispose of the Drive Scanner Instance
                 disposeScanner(DriveScannerPointer);
+
+                //Reset the pointer back to zero
+                DriveScannerPointer = IntPtr.Zero;
             }
             catch (Exception e)
             {

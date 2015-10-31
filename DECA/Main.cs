@@ -41,8 +41,11 @@ namespace DECA
                 MessageBox.Show("You have not selected a drive to analyse.");
             } else
             {
-                //Initialization
+                //Disable user controls while scanning
                 analysisBeginButton.Enabled = false;
+                driveSelectionBox.Enabled = false;
+
+                //Initialization
                 statusLabel.Text = "initializing...";
                 string drivePath = @"\\.\" + driveSelectionBox.Text.Substring(0, driveSelectionBox.Text.Length - 1);
                 long totalAmountOfSectors = allDrives[driveSelectionBox.SelectedIndex].TotalSize / 512;
@@ -58,8 +61,7 @@ namespace DECA
                     scanSectorBackgroundWorker.RunWorkerAsync(analysisProgressBar.Value);
                 }
                 
-                //DriveScanner.Dispose();
-                //Console.WriteLine(drivePath);
+                DriveScanner.Dispose();
             }
 
         }
@@ -77,14 +79,18 @@ namespace DECA
         {
             if (e.Error != null)
             {
-                MessageBox.Show(e.Error.Message);
+                Console.WriteLine(e.Error.Message.ToString());
+
             }
             else
             {
                 // Finally, handle the case where the operation 
                 // succeeded.
-                MessageBox.Show(e.Result.ToString());
+                Console.WriteLine(e.Result.ToString());
             }
+            //Re-enable user controls
+            analysisBeginButton.Enabled = true;
+            driveSelectionBox.Enabled = true;
         }
 
         private void scanSectorBackgroundWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
@@ -95,8 +101,8 @@ namespace DECA
         private int[] ScanSector(int currentProgressBarValue, BackgroundWorker worker, DoWorkEventArgs e)
         {
             //Get the scan results for all sectors
-            int[][] resultArrays = new int[2][];
-            for (int i = 0; i <= 2; i++)
+            int[][] resultArrays = new int[10000][];
+            for (int i = 0; i <= 10000; i++)
             {
                 resultArrays[i] = DriveScanner.ScanSector();
                 worker.ReportProgress(currentProgressBarValue++);
