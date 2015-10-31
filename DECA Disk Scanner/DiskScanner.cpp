@@ -193,7 +193,7 @@ void DiskScanner::addSignature(unsigned int sigID, unsigned int sigLength, unsig
 	dataPoint.sigHeader = new unsigned char[sigLength];
 
 	// Save the signature data.
-	for (unsigned int i = 0; i < maxSize; i++)
+	for (unsigned int i = 0; i < sigLength; i++)
 		dataPoint.sigHeader[i] = sigHeader[i];
 	
 	#ifdef DEBUG_MODE
