@@ -29,19 +29,13 @@ namespace DECA_Interaction_Spike
         public static extern void lockSignatureList(IntPtr diskScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr scanChunk(IntPtr driveScanner);
+        public static extern IntPtr scanChunkDatabase(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr scanChunk_BST(IntPtr driveScanner);
+        public static extern void unmountVolume();
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr scanChunkBySector(IntPtr driveScanner);
-
-        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern IntPtr scanChunkBySector_BST(IntPtr driveScanner);
-
-        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int unmountVolume(IntPtr driveScanner);
+        public static extern void disposeScanner(IntPtr driveScanner);
         #endregion
 
         public static string ConvertHexToString(string HexValue)
@@ -67,8 +61,9 @@ namespace DECA_Interaction_Spike
                 Model.SignatureLibrary.Signatures SignatureLibrary = (Model.SignatureLibrary.Signatures)serializer.Deserialize(libraryReader);
                 libraryReader.Close();
 
+                //Get the maximum signature size
                 int currentMaxSignatureSize = 0;
-                for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
+                for (int i = 0; i <= 1; i++)
                 {
                     if (SignatureLibrary.Signature[i].HeaderSignature.Length > currentMaxSignatureSize)
                     {
@@ -81,12 +76,13 @@ namespace DECA_Interaction_Spike
 
                 //Configure the scanner
                 //buildScanner(DriveScanner, Convert.ToUInt32(args[0]), 1024, args[1], 0);
-                buildScanner(DriveScanner, 1, 512, @"\\.\E:", 129280, (UInt32)currentMaxSignatureSize);
+                buildScanner(DriveScanner, 16410, 512, @"\\.\F:", 0, (UInt32)currentMaxSignatureSize);
 
                 //Mount volume
                 if (mountVolume(DriveScanner) == 0)
                 {
-                    for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
+                    //Add the signatures into the signature library on the dll
+                    for (int i = 0; i <= 1; i++)
                     {
                         Model.ScanRequest.SignatureData signature = new Model.ScanRequest.SignatureData();
                         signature.sigId = (UInt32)i;
@@ -96,10 +92,13 @@ namespace DECA_Interaction_Spike
 
                     lockSignatureList(DriveScanner);
 
-                    IntPtr result = scanChunkBySector(DriveScanner);
-             
+                    int[] resultArray = new int[2];
+                    IntPtr result = scanChunkDatabase(DriveScanner);
+                    Marshal.Copy(result, resultArray, 0, 2);
 
-                    unmountVolume(DriveScanner);
+                    unmountVolume();
+
+                    disposeScanner(DriveScanner);
                 }
 
 
