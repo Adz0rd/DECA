@@ -12,7 +12,7 @@ Written by Taylor.
 #define DISKSCANNER_API __declspec(dllexport)
 #endif
 
-#define DEBUG_MODE 1
+//#define DEBUG_MODE 1
 
 extern "C"
 {
