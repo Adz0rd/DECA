@@ -45,11 +45,14 @@ int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
 	// Compare hex strings.
 	for (int i = 0; i < sigSize; i++)
 	{
-		if (sig1[i] > sig2[i]) {
+		unsigned int chSig1 = sig1[i];
+		unsigned int chSig2 = sig2[i];
+
+		if (chSig1 >chSig2) {
 			return 1;
 		}
 
-		else if (sig1[i] < sig2[i]) {
+		else if (chSig1 < chSig2) {
 			return -1;
 		}
 	}
