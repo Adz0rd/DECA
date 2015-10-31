@@ -45,7 +45,7 @@
             this.analysisProgressBar.Location = new System.Drawing.Point(12, 182);
             this.analysisProgressBar.Maximum = 10000;
             this.analysisProgressBar.Name = "analysisProgressBar";
-            this.analysisProgressBar.Size = new System.Drawing.Size(429, 23);
+            this.analysisProgressBar.Size = new System.Drawing.Size(372, 23);
             this.analysisProgressBar.TabIndex = 0;
             // 
             // label1
@@ -61,14 +61,14 @@
             // 
             this.driveSelectionBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.driveSelectionBox.FormattingEnabled = true;
-            this.driveSelectionBox.Location = new System.Drawing.Point(322, 6);
+            this.driveSelectionBox.Location = new System.Drawing.Point(265, 6);
             this.driveSelectionBox.Name = "driveSelectionBox";
             this.driveSelectionBox.Size = new System.Drawing.Size(119, 21);
             this.driveSelectionBox.TabIndex = 1;
             // 
             // analysisBeginButton
             // 
-            this.analysisBeginButton.Location = new System.Drawing.Point(322, 41);
+            this.analysisBeginButton.Location = new System.Drawing.Point(265, 41);
             this.analysisBeginButton.Name = "analysisBeginButton";
             this.analysisBeginButton.Size = new System.Drawing.Size(119, 23);
             this.analysisBeginButton.TabIndex = 2;
@@ -123,7 +123,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(453, 217);
+            this.ClientSize = new System.Drawing.Size(396, 217);
             this.Controls.Add(this.statusLabel);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
@@ -132,7 +132,9 @@
             this.Controls.Add(this.driveSelectionBox);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.analysisProgressBar);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "Main";
+            this.ShowIcon = false;
             this.Text = "DECA - Drive erasure confidence application";
             this.Load += new System.EventHandler(this.Main_Load);
             this.ResumeLayout(false);
