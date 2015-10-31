@@ -22,7 +22,7 @@ namespace DECA
         private static extern int mountVolume(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
-        private static extern void addSignature(IntPtr driveScanner, UInt32 sigId, [MarshalAs(UnmanagedType.LPStr)] string sigHeader, UInt32 sigLength);
+        private static extern void addSignature(IntPtr driveScanner, UInt32 sigId, UInt32 sigLength, [MarshalAs(UnmanagedType.LPStr)] string sigHeader);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern void lockSignatureList(IntPtr driveScanner);
@@ -126,7 +126,7 @@ namespace DECA
                     //Add the list of signature into the signature library located within the dll
                     for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
                     {
-                        addSignature(DriveScannerPointer, (UInt32)i, SignatureLibrary.Signature.ToArray()[i].HeaderSignature, (UInt32)SignatureLibrary.Signature.ToArray()[i].HeaderSignature.Length);
+                        addSignature(DriveScannerPointer, (UInt32)i, (UInt32)SignatureLibrary.Signature.ToArray()[i].HeaderSignature.Length, SignatureLibrary.Signature.ToArray()[i].HeaderSignature);
                     }
                 }
                 catch (Exception e)
@@ -190,7 +190,7 @@ namespace DECA
                 IntPtr result = scanChunkBySector(DriveScannerPointer);
 
                 //Copy the contents of the pointer into an int array
-                int[] resultArray = new int[SignatureLibrary.Signature.Length - 1];
+                int[] resultArray = new int[SignatureLibrary.Signature.Length];
                 Marshal.Copy(result, resultArray, 0, SignatureLibrary.Signature.Length);
 
                 return resultArray;
