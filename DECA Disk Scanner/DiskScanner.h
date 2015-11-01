@@ -87,6 +87,7 @@ private:
 	void printCompareSig(unsigned char *sig1, unsigned char *sig2, int size);		// Signature comparison with output.
 	int binarySearch(unsigned char *sig, int min, int max, int sigSize);			// Recursive binary seach.
 	int hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize);			// Compare hex values.
+	bool isSigInRange(unsigned char *sig);											// Check to see if the read in signature is within the range of stored signature values.
 };
 
 // Exported C functions for DLL communication from client.
