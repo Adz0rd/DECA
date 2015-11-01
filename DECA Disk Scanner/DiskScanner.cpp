@@ -1,5 +1,10 @@
+/*
+DiskScanner.cpp
+Written by Taylor.
+*/
+
 #include "DiskScanner.h"
-#include <string>
+
 IDiskScanner::~IDiskScanner() {}
 
 DiskScanner::~DiskScanner()
@@ -40,16 +45,19 @@ void DiskScanner::printCompareSig(unsigned char *sig1, unsigned char *sig2, int 
 }
 
 
-int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
+inline int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
 {
 	// Compare hex strings.
 	for (int i = 0; i < sigSize; i++)
 	{
-		if (sig1[i] > sig2[i]) {
+		unsigned int chSig1 = sig1[i];
+		unsigned int chSig2 = sig2[i];
+
+		if (chSig1 > chSig2) {
 			return 1;
 		}
 
-		else if (sig1[i] < sig2[i]) {
+		else if (chSig1 < chSig2) {
 			return -1;
 		}
 	}
@@ -86,11 +94,36 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 	// Key has been found.
 	else
 	{
+		// Check to see if a larger key can be found.
+		int result = 0;
+		do 
+		{
+			sigDataIterator++;
+
+			result = hexCheck(sigDataIterator._Ptr->sigHeader, sig, sigDataIterator._Ptr->sigLength);
+			if (result == 0)
+			{
+				// Move to the next signature in the database.
+				mid++;
+				sigDataIterator++;
+			}
+
+		} while (result != 0);
+
+		// Return the signature which best fits.
 		this->scanResult[mid]++;
 		return 0;
 	}
 
 	return -1;
+}
+
+bool DiskScanner::isSigInRange(unsigned char *sig)
+{
+	if ((hexCheck(sig, this->sigDataList[0].sigHeader, this->sigDataList[0].sigLength) == 1) && ((hexCheck(sig, this->sigDataList[numSigs - 1].sigHeader, this->sigDataList[numSigs - 1].sigLength)) == -1))
+		return true;
+
+	return false;
 }
 
 void DiskScanner::buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize)
@@ -258,34 +291,54 @@ unsigned int *DiskScanner::scanChunk()
 	// Reset the chunk pointer to the start of the data.
 	headerSetPtr = headerSet;
 
-	for (unsigned int i = 0; i < this->numSigs; i++)
+	for (unsigned int i = 0; i < this->chunkSize; i++)
 	{
-		for (unsigned int j = 0; j < this->numSigs; j++)
+		// Used to store the best fit signature for each header.
+		SIG_DATA *tempSig = NULL;
+
+		if(isSigInRange(headerSetPtr))
 		{
-			#ifdef DEBUG_MODE
-			printCompareSig(headerSetPtr, this->sigDataList[i].sigHeader, this->sigDataList[i].sigLength*uCharSize);
-			#endif
-
-			// Compare the current signature with the valid header.
-			if (compareSig(headerSetPtr, this->sigDataList[i].sigHeader, this->sigDataList[i].sigLength*uCharSize) == 0)
+			for (unsigned int j = 0; j < this->numSigs; j++)
 			{
 				#ifdef DEBUG_MODE
-				printf("match\n");
+				printCompareSig(headerSetPtr, this->sigDataList[i].sigHeader, this->sigDataList[i].sigLength*uCharSize);
 				#endif
 
-				// The signatures are equal, get the ID and incrememt the resultSet.
-				this->scanResult[i]++;
-			}
-			else
-			{
-				#ifdef DEBUG_MODE
-				printf("no match\n");
-				#endif
-			}
+				// Compare the current signature with the valid header.
+				if (compareSig(headerSetPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize) == 0)
+				{
+					#ifdef DEBUG_MODE
+					printf("match\n");
+					#endif
 
-
-			headerSetPtr += maxSize*uCharSize;
+					// The signatures are equal, get the ID and incrememt the resultSet.
+					if (tempSig == NULL)
+					{
+						// This is the first signature that matches the read in header.
+						this->scanResult[j]++;
+						tempSig = &this->sigDataList[j];
+					}
+					else
+					{
+						// There are multiple signatures that match the header. Compare the temporary signature with the new header; discard the temporary signature if the new header length is greater.
+						if (tempSig->sigLength < this->sigDataList[j].sigLength)
+						{
+							this->scanResult[tempSig->sigID]--;
+							this->scanResult[j]++;
+							tempSig = &this->sigDataList[j];
+						}
+					}
+				}
+				else
+				{
+					#ifdef DEBUG_MODE
+					printf("no match\n");
+					#endif
+				}
+			}
 		}
+
+		headerSetPtr += maxSize*uCharSize;
 	}
 
 	// Free memory and return results.
@@ -350,26 +403,29 @@ unsigned int *DiskScanner::scanChunk_BST()
 	// Check each signature in the signature database with each signature found in the scanning.
 	for (unsigned int i = 0; i < this->chunkSize; i++)
 	{
-		#ifdef DEBUG_MODE
-		printf(">> Finding signature: ");
-		for (unsigned int i = 0; i < this->maxSize; i++)
-			printf("%X", headerSetPtr[i]);
-		#endif
-		
-		// Recursively binary search through the header database vector for the current chunkPtr.
-		if (binarySearch(headerSetPtr, 0, this->numSigs, this->maxSize) == 0)
+		if(isSigInRange(headerSetPtr))
 		{
 			#ifdef DEBUG_MODE
-			printf(" ...match\n");
+			printf(">> Finding signature: ");
+			for (unsigned int i = 0; i < this->maxSize; i++)
+				printf("%X", headerSetPtr[i]);
 			#endif
-		}
-		else
-		{
-			#ifdef DEBUG_MODE
-			printf(" ...no match\n");
-			#endif
-		}
 		
+			// Recursively binary search through the header database vector for the current chunkPtr.
+			if (binarySearch(headerSetPtr, 0, this->numSigs, this->maxSize) == 0)
+			{
+				#ifdef DEBUG_MODE
+				printf(" ...match\n");
+				#endif
+			}
+			else
+			{
+				#ifdef DEBUG_MODE
+				printf(" ...no match\n");
+				#endif
+			}
+		}
+
 		headerSetPtr += maxSize*uCharSize;
 	}
 
@@ -419,27 +475,46 @@ unsigned int *DiskScanner::scanChunkBySector()
 		// Get a pointer to the start of the data.
 		chunkPtr = chunkData;
 
-		for (unsigned int j = 0; j < this->numSigs; j++)
+		if (isSigInRange(chunkPtr))
 		{
-			#ifdef DEBUG_MODE
-			printCompareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize);
-			#endif
-
-			// Compare the current signature with the valid header.
-			if (compareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize) == 0)
+			SIG_DATA *tempSig = NULL;
+			for (unsigned int j = 0; j < this->numSigs; j++)
 			{
 				#ifdef DEBUG_MODE
-				printf("match\n");
+				printCompareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize);
 				#endif
 
-				// The signatures are equal, get the ID and incrememt the resultSet.
-				this->scanResult[j]++;
-			}
-			else
-			{
-				#ifdef DEBUG_MODE
-				printf("no match\n");
-				#endif
+				// Compare the current signature with the valid header.
+				if (compareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize) == 0)
+				{
+					#ifdef DEBUG_MODE
+					printf("match\n");
+					#endif
+
+					// The signatures are equal, get the ID and incrememt the resultSet.
+					if (tempSig == NULL)
+					{
+						// This is the first signature that matches the read in header.
+						this->scanResult[i]++;
+						tempSig = &this->sigDataList[i];
+					}
+					else
+					{
+						// There are multiple signatures that match the header. Compare the temporary signature with the new header; discard the temporary signature if the new header length is greater.
+						if (tempSig->sigLength < this->sigDataList[i].sigLength)
+						{
+							this->scanResult[tempSig->sigID]--;
+							this->scanResult[i]++;
+							tempSig = &this->sigDataList[i];
+						}
+					}
+				}
+				else
+				{
+					#ifdef DEBUG_MODE
+					printf("no match\n");
+					#endif
+				}
 			}
 		}
 	}
@@ -495,18 +570,21 @@ unsigned int *DiskScanner::scanChunkBySector_BST()
 			printf("%X", chunkPtr[i]);
 		#endif
 
-		// Recursively binary search through the header database vector for the current chunkPtr.
-		if (binarySearch(chunkPtr, 0, this->numSigs, this->maxSize) == 0)
+		if (isSigInRange(chunkPtr))
 		{
-			#ifdef DEBUG_MODE
-			printf("... match\n");
-			#endif
-		}
-		else
-		{
-			#ifdef DEBUG_MODE
-			printf("... no match\n");
-			#endif
+			// Recursively binary search through the header database vector for the current chunkPtr.
+			if (binarySearch(chunkPtr, 0, this->numSigs, this->maxSize) == 0)
+			{
+				#ifdef DEBUG_MODE
+				printf("... match\n");
+				#endif
+			}
+			else
+			{
+				#ifdef DEBUG_MODE
+				printf("... no match\n");
+				#endif
+			}
 		}
 	}
 

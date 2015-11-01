@@ -54,11 +54,11 @@ public:
 	~DiskScanner();
 
 	// Build the scanner object.
-	void buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize);
+	void buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize);		// Build a scanner object.
 
 	// Mount and unmount the volume.
-	int mountVolume();
-	int unmountVolume();
+	int mountVolume();					// Mount a hard disk.
+	int unmountVolume();				// Unmount from a hard disk.
 
 	// Signature initilisation methods.
 	void addSignature(unsigned int sigID, unsigned int sigLength, unsigned char *sigHeader);	// Add a signature to the database.
@@ -87,6 +87,7 @@ private:
 	void printCompareSig(unsigned char *sig1, unsigned char *sig2, int size);		// Signature comparison with output.
 	int binarySearch(unsigned char *sig, int min, int max, int sigSize);			// Recursive binary seach.
 	int hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize);			// Compare hex values.
+	bool isSigInRange(unsigned char *sig);											// Check to see if the read in signature is within the range of stored signature values.
 };
 
 // Exported C functions for DLL communication from client.
@@ -118,7 +119,6 @@ extern "C"
 	{
 		diskScanner->addSignature(sigID, sigLength, sigHeader);
 	}
-
 
 	DISKSCANNER_API void lockSignatureList(IDiskScanner *diskScanner)
 	{
