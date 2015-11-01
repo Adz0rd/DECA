@@ -1,5 +1,10 @@
+/*
+DiskScanner.cpp
+Written by Taylor.
+*/
+
 #include "DiskScanner.h"
-#include <string>
+
 IDiskScanner::~IDiskScanner() {}
 
 DiskScanner::~DiskScanner()
@@ -40,7 +45,7 @@ void DiskScanner::printCompareSig(unsigned char *sig1, unsigned char *sig2, int 
 }
 
 
-int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
+inline int DiskScanner::hexCheck(unsigned char *sig1, unsigned char *sig2, int sigSize)
 {
 	// Compare hex strings.
 	for (int i = 0; i < sigSize; i++)
@@ -89,6 +94,23 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 	// Key has been found.
 	else
 	{
+		// Check to see if a larger key can be found.
+		int result = 0;
+		do 
+		{
+			sigDataIterator++;
+
+			result = hexCheck(sigDataIterator._Ptr->sigHeader, sig, sigDataIterator._Ptr->sigLength);
+			if (result == 0)
+			{
+				// Move to the next signature in the database.
+				mid++;
+				sigDataIterator++;
+			}
+
+		} while (result != 0);
+
+		// Return the signature which best fits.
 		this->scanResult[mid]++;
 		return 0;
 	}
@@ -263,6 +285,9 @@ unsigned int *DiskScanner::scanChunk()
 
 	for (unsigned int i = 0; i < this->numSigs; i++)
 	{
+		// Used to store the best fit signature for each header.
+		SIG_DATA *tempSig = NULL;
+
 		for (unsigned int j = 0; j < this->numSigs; j++)
 		{
 			#ifdef DEBUG_MODE
@@ -277,7 +302,22 @@ unsigned int *DiskScanner::scanChunk()
 				#endif
 
 				// The signatures are equal, get the ID and incrememt the resultSet.
-				this->scanResult[i]++;
+				if (tempSig == NULL)
+				{
+					// This is the first signature that matches the read in header.
+					this->scanResult[i]++;
+					tempSig = &this->sigDataList[i];
+				}
+				else
+				{
+					// There are multiple signatures that match the header. Compare the temporary signature with the new header; discard the temporary signature if the new header length is greater.
+					if (tempSig->sigLength < this->sigDataList[i].sigLength)
+					{
+						this->scanResult[tempSig->sigID]--;
+						this->scanResult[i]++;
+						tempSig = &this->sigDataList[i];
+					}
+				}
 			}
 			else
 			{
@@ -422,6 +462,7 @@ unsigned int *DiskScanner::scanChunkBySector()
 		// Get a pointer to the start of the data.
 		chunkPtr = chunkData;
 
+		SIG_DATA *tempSig = NULL;
 		for (unsigned int j = 0; j < this->numSigs; j++)
 		{
 			#ifdef DEBUG_MODE
@@ -436,7 +477,22 @@ unsigned int *DiskScanner::scanChunkBySector()
 				#endif
 
 				// The signatures are equal, get the ID and incrememt the resultSet.
-				this->scanResult[j]++;
+				if (tempSig == NULL)
+				{
+					// This is the first signature that matches the read in header.
+					this->scanResult[i]++;
+					tempSig = &this->sigDataList[i];
+				}
+				else
+				{
+					// There are multiple signatures that match the header. Compare the temporary signature with the new header; discard the temporary signature if the new header length is greater.
+					if (tempSig->sigLength < this->sigDataList[i].sigLength)
+					{
+						this->scanResult[tempSig->sigID]--;
+						this->scanResult[i]++;
+						tempSig = &this->sigDataList[i];
+					}
+				}
 			}
 			else
 			{

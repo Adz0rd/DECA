@@ -54,11 +54,11 @@ public:
 	~DiskScanner();
 
 	// Build the scanner object.
-	void buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize);
+	void buildScanner(unsigned int chunkSize, unsigned int sectorSize, char *diskPath, unsigned int startOffset, unsigned int maxSize);		// Build a scanner object.
 
 	// Mount and unmount the volume.
-	int mountVolume();
-	int unmountVolume();
+	int mountVolume();					// Mount a hard disk.
+	int unmountVolume();				// Unmount from a hard disk.
 
 	// Signature initilisation methods.
 	void addSignature(unsigned int sigID, unsigned int sigLength, unsigned char *sigHeader);	// Add a signature to the database.
@@ -118,7 +118,6 @@ extern "C"
 	{
 		diskScanner->addSignature(sigID, sigLength, sigHeader);
 	}
-
 
 	DISKSCANNER_API void lockSignatureList(IDiskScanner *diskScanner)
 	{
