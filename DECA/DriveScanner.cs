@@ -35,7 +35,7 @@ namespace DECA
         #endregion
 
         #region Global variables
-        public Model.SignatureLibrary.Signatures SignatureLibrary;
+        public Model.SignatureLibrary.Signatures SortedSignatureLibrary;
         private IntPtr DriveScannerPointer = IntPtr.Zero;
         #endregion
 
@@ -64,11 +64,11 @@ namespace DECA
         {
             //Get the maximum signature size
             int currentMaxSignatureLength = 0;
-            for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
+            for (int i = 0; i <= SortedSignatureLibrary.Signature.Length - 1; i++)
             {
-                if (SignatureLibrary.Signature[i].HeaderSignature.Length > currentMaxSignatureLength)
+                if (SortedSignatureLibrary.Signature[i].HeaderSignature.Length > currentMaxSignatureLength)
                 {
-                    currentMaxSignatureLength = SignatureLibrary.Signature[i].HeaderSignature.Length;
+                    currentMaxSignatureLength = SortedSignatureLibrary.Signature[i].HeaderSignature.Length;
                 }
             }
 
@@ -108,8 +108,11 @@ namespace DECA
                     //Read in the signature library and convert into our class
                     StreamReader libraryReader = new StreamReader(signatureLibraryPath);
                     XmlSerializer serializer = new XmlSerializer(typeof(Model.SignatureLibrary.Signatures));
-                    SignatureLibrary = (Model.SignatureLibrary.Signatures)serializer.Deserialize(libraryReader);
+                    Model.SignatureLibrary.Signatures TempSignatureLibrary = (Model.SignatureLibrary.Signatures)serializer.Deserialize(libraryReader);
                     libraryReader.Close();
+
+                    //Sort the library by the signature
+                    SortedSignatureLibrary.Signature = TempSignatureLibrary.Signature.OrderBy(si => si.HeaderSignature).ToArray();
                 }
                 catch (Exception e)
                 {
@@ -124,9 +127,9 @@ namespace DECA
                     CreateScanner();
 
                     //Add the list of signature into the signature library located within the dll
-                    for (int i = 0; i <= SignatureLibrary.Signature.Length - 1; i++)
+                    for (int i = 0; i <= SortedSignatureLibrary.Signature.Length - 1; i++)
                     {
-                        string HeaderAsHex = ConvertHexToString(SignatureLibrary.Signature.ToArray()[i].HeaderSignature);
+                        string HeaderAsHex = ConvertHexToString(SortedSignatureLibrary.Signature.ToArray()[i].HeaderSignature);
                         addSignature(DriveScannerPointer, (UInt32)i, (UInt32)HeaderAsHex.Length, HeaderAsHex);
                     }
                 }

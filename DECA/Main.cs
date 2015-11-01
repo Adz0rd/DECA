@@ -126,13 +126,13 @@ namespace DECA
                 resultArrays[i] = DriveScanner.ScanSector();
                 worker.ReportProgress(currentProgressBarValue++);
             }
-            
+
             //Sum all of the results into a single array
-            foreach(int[] resultArray in resultArrays)
+            foreach (int[] resultArray in resultArrays)
             {
                 resultArrays[0].Zip(resultArray, (x, y) => x + y);
             }
-            
+
             return resultArrays[0];
         }
     }
