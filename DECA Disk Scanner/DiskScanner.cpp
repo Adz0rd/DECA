@@ -94,6 +94,7 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 	// Key has been found.
 	else
 	{
+		MessageBox(NULL, "A key has been found", "Notice", NULL);
 		// Check to see if a larger key can be found.
 		int result = 0;
 		do 
@@ -476,46 +477,43 @@ unsigned int *DiskScanner::scanChunkBySector()
 		// Get a pointer to the start of the data.
 		chunkPtr = chunkData;
 
-		if (isSigInRange(chunkPtr))
+		SIG_DATA *tempSig = NULL;
+		for (unsigned int j = 0; j < this->numSigs; j++)
 		{
-			SIG_DATA *tempSig = NULL;
-			for (unsigned int j = 0; j < this->numSigs; j++)
+			#ifdef DEBUG_MODE
+			printCompareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize);
+			#endif
+
+			// Compare the current signature with the valid header.
+			if (compareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize) == 0)
 			{
 				#ifdef DEBUG_MODE
-				printCompareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize);
+				printf("match\n");
 				#endif
 
-				// Compare the current signature with the valid header.
-				if (compareSig(chunkPtr, this->sigDataList[j].sigHeader, this->sigDataList[j].sigLength*uCharSize) == 0)
+				// The signatures are equal, get the ID and incrememt the resultSet.
+				if (tempSig == NULL)
 				{
-					#ifdef DEBUG_MODE
-					printf("match\n");
-					#endif
-
-					// The signatures are equal, get the ID and incrememt the resultSet.
-					if (tempSig == NULL)
-					{
-						// This is the first signature that matches the read in header.
-						this->scanResult[j]++;
-						tempSig = &this->sigDataList[j];
-					}
-					else
-					{
-						// There are multiple signatures that match the header. Compare the temporary signature with the new header; discard the temporary signature if the new header length is greater.
-						if (tempSig->sigLength < this->sigDataList[j].sigLength)
-						{
-							this->scanResult[tempSig->sigID]--;
-							this->scanResult[j]++;
-							tempSig = &this->sigDataList[j];
-						}
-					}
+					// This is the first signature that matches the read in header.
+					this->scanResult[j]++;
+					tempSig = &this->sigDataList[j];
 				}
 				else
 				{
-					#ifdef DEBUG_MODE
-					printf("no match\n");
-					#endif
+					// There are multiple signatures that match the header. Compare the temporary signature with the new header; discard the temporary signature if the new header length is greater.
+					if (tempSig->sigLength < this->sigDataList[j].sigLength)
+					{
+						this->scanResult[tempSig->sigID]--;
+						this->scanResult[j]++;
+						tempSig = &this->sigDataList[j];
+					}
 				}
+			}
+			else
+			{
+				#ifdef DEBUG_MODE
+				printf("no match\n");
+				#endif
 			}
 		}
 	}
