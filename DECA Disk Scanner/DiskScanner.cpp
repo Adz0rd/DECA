@@ -98,7 +98,7 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 		int result = 0;
 		do 
 		{
-			if(mid < this->sigDataList.size())
+			if(mid < this->sigDataList.size()-1)
 			{
 				sigDataIterator++;
 	
