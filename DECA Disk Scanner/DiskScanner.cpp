@@ -98,17 +98,18 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 		int result = 0;
 		do 
 		{
-			sigDataIterator++;
-
-			result = hexCheck(sigDataIterator._Ptr->sigHeader, sig, sigDataIterator._Ptr->sigLength);
-			if (result == 0)
+			if(mid < this->sigDataList.size())
 			{
-				// Move to the next signature in the database.
-				mid++;
 				sigDataIterator++;
+	
+				result = hexCheck(sigDataIterator._Ptr->sigHeader, sig, sigDataIterator._Ptr->sigLength);
+				if (result == 0)
+					mid++;
 			}
+			else
+				result = -1;
 
-		} while (result != 0);
+		} while (result == 0);
 
 		// Return the signature which best fits.
 		this->scanResult[mid]++;
