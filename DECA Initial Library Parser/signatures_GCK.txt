@@ -458,7 +458,7 @@ Works for Windows spreadsheet,FF 00 02 00 04 04 05 54,Hex,N/A,WKS,Spreadsheet
 Windows international code page,FF 46 4F 4E 54,Hex,N/A,CPI,Windows
 Keyboard driver file,FF 4B 45 59 42 20 20 20,Hex,N/A,SYS,Windows
 WordPerfect text and graphics,FF 57 50 43,Hex,N/A,WP|WPD|WPG|WPP|WP5|WP6,Word processing suite
-JPEG|EXIF|SPIFF images,FF D8 FF,Hex,N/A,JFIF|JPE|JPEG|JPG,Pictures
+JPEG|EXIF|SPIFF images,FF D8 FF,Hex,N/A,JFIF|JPE|JPEG|JPG,Picture
 MPEG-4 AAC audio,FF F1,Hex,N/A,AAC,Audio
 MPEG-2 AAC audio,FF F9,Hex,N/A,AAC,Audio
 Windows Registry file,FF FE,Hex,N/A,REG,Windows

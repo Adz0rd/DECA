@@ -31,11 +31,14 @@ namespace DECA
         private static extern IntPtr scanChunkBySector(IntPtr driveScanner);
 
         [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr scanChunkBySector_BST(IntPtr driveScanner);
+
+        [DllImport("DECA Disk Scanner.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int unmountVolume(IntPtr driveScanner);
         #endregion
 
         #region Global variables
-        public Model.SignatureLibrary.Signatures SortedSignatureLibrary;
+        public Model.SignatureLibrary.Signatures SortedSignatureLibrary = new Model.SignatureLibrary.Signatures();
         private IntPtr DriveScannerPointer = IntPtr.Zero;
         #endregion
 
@@ -186,16 +189,24 @@ namespace DECA
         /// Scans a single sector and returns the result
         /// </summary>
         /// <returns>A 1d int array containing the results of the scan or -1 if the scan fails</returns>
-        public int[] ScanSector()
+        public int[] ScanSector(bool IsSearchQuick)
         {
             try
             {
-                //Scan the chunk and store the result an int pointer
-                IntPtr result = scanChunkBySector(DriveScannerPointer);
+                //Initialize the return pointer
+                IntPtr result = IntPtr.Zero;
+
+                if (IsSearchQuick)
+                {
+                    result = scanChunkBySector_BST(DriveScannerPointer);
+                } else
+                {
+                    result = scanChunkBySector(DriveScannerPointer);
+                }
 
                 //Copy the contents of the pointer into an int array
-                int[] resultArray = new int[SignatureLibrary.Signature.Length];
-                Marshal.Copy(result, resultArray, 0, SignatureLibrary.Signature.Length);
+                int[] resultArray = new int[SortedSignatureLibrary.Signature.Length];
+                Marshal.Copy(result, resultArray, 0, SortedSignatureLibrary.Signature.Length);
 
                 return resultArray;
             }

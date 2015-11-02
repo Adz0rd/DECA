@@ -28,7 +28,9 @@ namespace DECA
 
         private void Main_Load(object sender, EventArgs e)
         {
+            //Initialize the GUI
             driveSelectionBox.Items.AddRange(allDrives);
+            quickSearchCheckBox.Checked = true;
 
             //Load the signature library
             DriveScanner = new DriveScanner();
@@ -62,21 +64,23 @@ namespace DECA
                 //Disable user controls while scanning
                 analysisBeginButton.Enabled = false;
                 driveSelectionBox.Enabled = false;
+                quickSearchCheckBox.Enabled = false;
 
                 //Initialization
                 statusLabel.Text = "initializing...";
+                analysisProgressBar.Value = 0;
                 string drivePath = @"\\.\" + driveSelectionBox.Text.Substring(0, driveSelectionBox.Text.Length - 1);
                 long totalAmountOfSectors = allDrives[driveSelectionBox.SelectedIndex].TotalSize / 512;
-                //int sectorsPerCluster = (int)totalAmountOfSectors / 10000;
-                int sectorsPerCluster = 1;
+                int sectorsPerCluster = (int)totalAmountOfSectors / 10000;
+                //int sectorsPerCluster = 1;
                 DriveScanner.Initialize(sectorsPerCluster, 512, drivePath);
 
                 //Scanning
-                statusLabel.Text = "scanning...";
+                statusLabel.Text = "analysing...";
                 if (scanSectorBackgroundWorker.IsBusy != true)
                 {
                     // Start the asynchronous operation.
-                    scanSectorBackgroundWorker.RunWorkerAsync(analysisProgressBar.Value);
+                    scanSectorBackgroundWorker.RunWorkerAsync(quickSearchCheckBox.Checked);
                 }
             }
 
@@ -88,25 +92,54 @@ namespace DECA
             BackgroundWorker worker = sender as BackgroundWorker;
 
             //Store the result
-            e.Result = ScanSector((int)e.Argument, worker, e);
+            e.Result = ScanSector((bool)e.Argument, worker, e);
         }
 
         private void scanSectorBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            string ResultMessage = "";
+
             if (e.Error != null)
             {
                 Console.WriteLine(e.Error.Message.ToString());
-
             }
             else
             {
-                // Finally, handle the case where the operation 
-                // succeeded.
-                Console.WriteLine(e.Result.ToString());
+                int[] result = (int[])e.Result;
+
+                //Match up the result to signatures
+                Dictionary<string, int> resultList = new Dictionary<string, int>();
+                for (int i = 0; i < result.Length - 1; i++)
+                {
+                    if (result[i] > 0)
+                    {
+                        if (resultList.ContainsKey(DriveScanner.SortedSignatureLibrary.Signature[i].Category))
+                        {
+                            //The result list contains the category of signature already, just update the amount we found
+                            resultList[DriveScanner.SortedSignatureLibrary.Signature[i].Category] += result[i];
+                        } else
+                        {
+                            //The result list doesnt contain the category of signature, add it to the list with teh current value
+                            resultList.Add(DriveScanner.SortedSignatureLibrary.Signature[i].Category, result[i]);
+                        }
+                    }
+                }
+
+                //Create a message to return to the user
+                foreach (KeyValuePair<string, int> pair in resultList)
+                {
+                    ResultMessage += pair.Value + " " + pair.Key + " files found.\n";
+                }
+
+                MessageBox.Show(ResultMessage);
             }
+
             //Re-enable user controls
-            analysisBeginButton.Enabled = true;
-            driveSelectionBox.Enabled = true;
+            //analysisBeginButton.Enabled = true;
+            //driveSelectionBox.Enabled = true;
+
+            //Reset graphical controls
+            statusLabel.Text = "analysis complete.";
 
             //Dispose of finished drive scanner
             DriveScanner.Dispose();
@@ -117,23 +150,30 @@ namespace DECA
             this.analysisProgressBar.Value = e.ProgressPercentage;
         }
 
-        private int[] ScanSector(int currentProgressBarValue, BackgroundWorker worker, DoWorkEventArgs e)
+        private int[] ScanSector(bool IsSearchQuick, BackgroundWorker worker, DoWorkEventArgs e)
         {
-            //Get the scan results for all sectors
             int[][] resultArrays = new int[10000][];
+            int[] results = new int[DriveScanner.SortedSignatureLibrary.Signature.Length];
+
+            int currentProgressBarValue = 0;
+
             for (int i = 0; i < 10000; i++)
             {
-                resultArrays[i] = DriveScanner.ScanSector();
+                resultArrays[i] = DriveScanner.ScanSector(IsSearchQuick);
+
+                //Sum all of the results into a single array
+                if (i > 0)
+                {
+                    results = resultArrays[0].Zip(resultArrays[i], (x, y) => x + y).ToArray();
+                } else
+                {
+                    results = resultArrays[0];
+                }
+                
                 worker.ReportProgress(currentProgressBarValue++);
             }
 
-            //Sum all of the results into a single array
-            foreach (int[] resultArray in resultArrays)
-            {
-                resultArrays[0].Zip(resultArray, (x, y) => x + y);
-            }
-
-            return resultArrays[0];
+            return results;
         }
     }
 }

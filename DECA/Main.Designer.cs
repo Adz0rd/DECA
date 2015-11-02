@@ -28,7 +28,6 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             this.analysisProgressBar = new System.Windows.Forms.ProgressBar();
             this.label1 = new System.Windows.Forms.Label();
             this.driveSelectionBox = new System.Windows.Forms.ComboBox();
@@ -38,6 +37,8 @@
             this.label4 = new System.Windows.Forms.Label();
             this.statusLabel = new System.Windows.Forms.Label();
             this.scanSectorBackgroundWorker = new System.ComponentModel.BackgroundWorker();
+            this.label5 = new System.Windows.Forms.Label();
+            this.quickSearchCheckBox = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // analysisProgressBar
@@ -88,11 +89,11 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 75);
+            this.label3.Location = new System.Drawing.Point(12, 78);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(369, 52);
+            this.label3.Size = new System.Drawing.Size(210, 26);
             this.label3.TabIndex = 5;
-            this.label3.Text = resources.GetString("label3.Text");
+            this.label3.Text = "Step 3. Choose if you would like to make it \r\na \"Quick Search\"";
             // 
             // label4
             // 
@@ -119,11 +120,33 @@
             this.scanSectorBackgroundWorker.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.scanSectorBackgroundWorker_ProgressChanged);
             this.scanSectorBackgroundWorker.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.scanSectorBackgroundWorker_RunWorkerCompleted);
             // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(12, 116);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(369, 26);
+            this.label5.TabIndex = 8;
+            this.label5.Text = "Step 4. Monitor the progress bar below and wait for the analysis to complete. \r\nO" +
+    "nce the analysis is complete, a simple results window will be displayed. ";
+            // 
+            // quickSearchCheckBox
+            // 
+            this.quickSearchCheckBox.AutoSize = true;
+            this.quickSearchCheckBox.Location = new System.Drawing.Point(265, 77);
+            this.quickSearchCheckBox.Name = "quickSearchCheckBox";
+            this.quickSearchCheckBox.Size = new System.Drawing.Size(91, 17);
+            this.quickSearchCheckBox.TabIndex = 9;
+            this.quickSearchCheckBox.Text = "Quick Search";
+            this.quickSearchCheckBox.UseVisualStyleBackColor = true;
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(396, 217);
+            this.Controls.Add(this.quickSearchCheckBox);
+            this.Controls.Add(this.label5);
             this.Controls.Add(this.statusLabel);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
@@ -153,6 +176,8 @@
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label statusLabel;
         private System.ComponentModel.BackgroundWorker scanSectorBackgroundWorker;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.CheckBox quickSearchCheckBox;
     }
 }
 

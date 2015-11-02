@@ -18,7 +18,7 @@ namespace DECA_Initial_Library_Parser
                 int lineCounter = 0;
 
                 // Open the text file using a stream reader.
-                using (StreamReader sr = new StreamReader(Environment.CurrentDirectory + "\\signatures_GCK.txt"))
+                using (StreamReader sr = new StreamReader(args[0]))
                 {
                     string line;
                     while ((line = sr.ReadLine()) != null)

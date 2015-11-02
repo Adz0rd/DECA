@@ -117,12 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="label3.Text" xml:space="preserve">
-    <value>Step 3. Monitor the progress bar below and wait for the analysis to complete. 
-Once the analysis is complete, a simple results window will be displayed. 
-If you'd like a more in-depth analysis results, please click the save detailed 
-report button and choose a location to save the report.</value>
-  </data>
   <metadata name="scanSectorBackgroundWorker.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
