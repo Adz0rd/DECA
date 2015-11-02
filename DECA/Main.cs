@@ -72,8 +72,20 @@ namespace DECA
                 string drivePath = @"\\.\" + driveSelectionBox.Text.Substring(0, driveSelectionBox.Text.Length - 1);
                 long totalAmountOfSectors = allDrives[driveSelectionBox.SelectedIndex].TotalSize / 512;
                 int sectorsPerCluster = (int)totalAmountOfSectors / 10000;
-                //int sectorsPerCluster = 1;
-                DriveScanner.Initialize(sectorsPerCluster, 512, drivePath);
+                int initializationResult = DriveScanner.Initialize(sectorsPerCluster, 512, drivePath);
+
+                //Error check
+                switch (initializationResult)
+                {
+                    case 1:
+                        MessageBox.Show("Error while initializing the volume. Please restart the program and try again.");
+                        statusLabel.Text = "failed to initialize. Please restart the application.";
+                        break;
+                    case 2:
+                        MessageBox.Show("Error while mounting the volume. Please make sure the volume isn't being utilized by another program and try again.");
+                        statusLabel.Text = "failed to initialize. Please restart the application.";
+                        break;
+                }
 
                 //Scanning
                 statusLabel.Text = "analysing...";
@@ -134,7 +146,7 @@ namespace DECA
                 MessageBox.Show(ResultMessage == "" ? "No files found." : ResultMessage);
             }
 
-            //Re-enable user controls
+            //Re-enable user controls - Disabled due to errors (out-of-scope)
             //analysisBeginButton.Enabled = true;
             //driveSelectionBox.Enabled = true;
 

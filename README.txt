@@ -1,0 +1,1 @@
+Thanks to Gary C. Kessler (http://www.garykessler.net/) for providing his File Signature library under the GPLv3 license so that it may be used with this application.
