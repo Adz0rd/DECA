@@ -495,17 +495,17 @@ unsigned int *DiskScanner::scanChunkBySector()
 					if (tempSig == NULL)
 					{
 						// This is the first signature that matches the read in header.
-						this->scanResult[i]++;
-						tempSig = &this->sigDataList[i];
+						this->scanResult[j]++;
+						tempSig = &this->sigDataList[j];
 					}
 					else
 					{
 						// There are multiple signatures that match the header. Compare the temporary signature with the new header; discard the temporary signature if the new header length is greater.
-						if (tempSig->sigLength < this->sigDataList[i].sigLength)
+						if (tempSig->sigLength < this->sigDataList[j].sigLength)
 						{
 							this->scanResult[tempSig->sigID]--;
-							this->scanResult[i]++;
-							tempSig = &this->sigDataList[i];
+							this->scanResult[j]++;
+							tempSig = &this->sigDataList[j];
 						}
 					}
 				}
