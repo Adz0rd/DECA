@@ -131,7 +131,7 @@ namespace DECA
                     ResultMessage += pair.Value + " " + pair.Key + " files found.\n";
                 }
 
-                MessageBox.Show(ResultMessage);
+                MessageBox.Show(ResultMessage == "" ? "No files found." : ResultMessage);
             }
 
             //Re-enable user controls
