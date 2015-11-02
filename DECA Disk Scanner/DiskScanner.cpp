@@ -98,8 +98,6 @@ int DiskScanner::binarySearch(unsigned char *sig, int min, int max, int sigSize)
 		this->scanResult[mid]++;
 		return 0;
 	}
-
-	return -1;
 }
 
 bool DiskScanner::isSigInRange(unsigned char *sig)
@@ -396,7 +394,7 @@ unsigned int *DiskScanner::scanChunk_BST()
 			#endif
 		
 			// Recursively binary search through the header database vector for the current chunkPtr.
-			if (binarySearch(headerSetPtr, 0, this->numSigs, this->maxSize) == 0)
+			if (binarySearch(headerSetPtr, 0, this->numSigs-1, this->maxSize) == 0)
 			{
 				#ifdef DEBUG_MODE
 				printf(" ...match\n");
@@ -557,7 +555,7 @@ unsigned int *DiskScanner::scanChunkBySector_BST()
 		if (isSigInRange(chunkPtr))
 		{
 			// Recursively binary search through the header database vector for the current chunkPtr.
-			if (binarySearch(chunkPtr, 0, this->numSigs, this->maxSize) == 0)
+			if (binarySearch(chunkPtr, 0, this->numSigs-1, this->maxSize) == 0)
 			{
 				#ifdef DEBUG_MODE
 				printf("... match\n");
